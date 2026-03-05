@@ -32,11 +32,12 @@ html, body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  pointer-events: none; /* only button should receive taps */
+  pointer-events: auto; /* allow taps */
 }
 
 #startButton {
   pointer-events: auto;
+  z-index: 100000;
   font-size: 18px;
   padding: 16px 22px;
   border: 0;

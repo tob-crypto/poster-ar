@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Poster AR</title>
 
-  <script src="./three.min.js"></script>
-  <script src="./mindar-image-three.prod.js"></script>
-
   <style>
     html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; }
     #startBtn {
@@ -44,6 +41,10 @@
       display: none;
     }
   </style>
+
+  <!-- IMPORTANT: type these filenames manually (normal hyphens "-") -->
+  <script src="./three.min.js" onload="window.__threeLoaded = true"></script>
+  <script src="./mindar-image-three.prod.js" onload="window.__mindarFileLoaded = true"></script>
 </head>
 
 <body>
@@ -66,7 +67,6 @@
     showError("Promise rejection:\n" + (e.reason?.message || e.reason || "Unknown"));
   });
 
-  // Change positions and scales here
   const PLACEMENTS = {
     0: [
       { x: -0.30, y:  0.25, scale: 0.55, file: "p1_anim1.webm" },
@@ -98,41 +98,44 @@
     return v;
   }
 
-  async function fileExists(path) {
-    const r = await fetch(path, { method: "HEAD" });
-    return r.ok;
-  }
-
   async function startAR() {
-    document.getElementById("startBtn").disabled = true;
-    document.getElementById("startBtn").textContent = "Starting...";
+    const btn = document.getElementById("startBtn");
+    btn.disabled = true;
+    btn.textContent = "Starting...";
 
-    // 1) Confirm libraries loaded
-    if (!window.THREE) {
-      showError("THREE did not load.\nCheck: /three.min.js exists on Netlify and index.html references it correctly.");
+    // 1) Check that the script tags actually loaded
+    if (!window.__threeLoaded || !window.THREE) {
+      showError(
+        "THREE did not load.\n\n" +
+        "Fix:\n" +
+        "1) Confirm this URL shows code:\n" +
+        "   /three.min.js\n" +
+        "2) Confirm index.html has:\n" +
+        "   <script src=\"./three.min.js\">"
+      );
       return;
     }
+
+    if (!window.__mindarFileLoaded) {
+      showError(
+        "MindAR script file did not finish loading.\n\n" +
+        "Fix:\n" +
+        "1) Confirm this URL shows code:\n" +
+        "   /mindar-image-three.prod.js\n" +
+        "2) Re-type the filename in index.html using normal '-' hyphens."
+      );
+      return;
+    }
+
     if (!(window.MINDAR && window.MINDAR.IMAGE && window.MINDAR.IMAGE.MindARThree)) {
-      showError("MindAR did not load.\nCheck: /mindar-image-three.prod.js exists on Netlify and index.html references it correctly.");
+      showError(
+        "MindAR file loaded, but window.MINDAR is still missing.\n\n" +
+        "This usually means Safari used an older cached index.html or a script error occurred earlier.\n" +
+        "Try opening the page in a Private tab, then reload."
+      );
       return;
     }
 
-    // 2) Confirm essential files are deployed
-    const required = [
-      "./targets.mind",
-      "./p1_anim1.webm","./p1_anim2.webm","./p1_anim3.webm",
-      "./p2_anim1.webm","./p2_anim2.webm","./p2_anim3.webm",
-      "./p3_anim1.webm","./p3_anim2.webm","./p3_anim3.webm",
-    ];
-    for (const f of required) {
-      const ok = await fileExists(f);
-      if (!ok) {
-        showError("Missing on Netlify:\n" + f + "\n\nThis is a deploy problem (file not uploaded or wrong name).");
-        return;
-      }
-    }
-
-    // 3) Start MindAR
     const mindarThree = new window.MINDAR.IMAGE.MindARThree({
       container: document.body,
       imageTargetSrc: "./targets.mind",
@@ -147,6 +150,7 @@
 
     for (const targetIndex of [0, 1, 2]) {
       const anchor = anchors[targetIndex];
+
       for (const item of PLACEMENTS[targetIndex]) {
         const video = makeVideo(item.file);
         videosByTarget[targetIndex].push(video);
@@ -175,18 +179,17 @@
     }
 
     try {
-      await mindarThree.start(); // camera permission prompt should happen here
+      await mindarThree.start(); // iPhone should ask for camera permission here
     } catch (err) {
       showError(
         "Camera did not start.\n\n" +
-        "On iPhone: open in Safari, then allow Camera.\n" +
-        "Check iPhone Settings > Safari > Camera.\n\n" +
+        "On iPhone: open in Safari and allow Camera.\n\n" +
         "Error:\n" + (err?.message || err)
       );
       return;
     }
 
-    document.getElementById("startBtn").style.display = "none";
+    btn.style.display = "none";
     renderer.setAnimationLoop(() => renderer.render(scene, camera));
   }
 

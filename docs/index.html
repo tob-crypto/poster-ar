@@ -1,151 +1,35 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Poster AR</title>
-
-<style>
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: #000;
-}
-
-/* AR goes behind */
-#ar-container {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-}
-
-/* UI goes on top and must receive taps */
-#overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none; /* allow only UI elements to receive taps */
-}
-
-#startButton {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  padding: 15px 25px;
-  font-size: 18px;
-  pointer-events: auto; /* make button clickable */
-}
-
-#info {
-  position: absolute;
-  bottom: 10px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  color: white;
-  font-family: sans-serif;
-  pointer-events: none;
-}
-</style>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "./three.module.js",
-    "mindar-image-three": "./mindar-image-three.prod.js"
-  }
-}
-</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <title>Tap Test</title>
+  <style>
+    html, body { margin:0; height:100%; background:#000; }
+    #btn {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 22px;
+      padding: 24px 28px;
+      z-index: 999999;
+      touch-action: manipulation;
+    }
+    #note {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      color: #fff;
+      padding: 12px;
+      font-family: sans-serif;
+      text-align: center;
+      background: rgba(0,0,0,0.6);
+      z-index: 999999;
+    }
+  </style>
 </head>
-
 <body>
-
-<div id="ar-container"></div>
-
-<div id="overlay">
-  <button id="startButton">Tap to Start AR</button>
-  <div id="info">Point camera at poster</div>
-</div>
-
-<script type="module">
-import * as THREE from "three";
-import { MindARThree } from "mindar-image-three";
-
-const startButton = document.querySelector("#startButton");
-const info = document.querySelector("#info");
-const overlay = document.querySelector("#overlay");
-const arContainer = document.querySelector("#ar-container");
-
-startButton.addEventListener("click", startAR);
-
-async function startAR() {
-  startButton.disabled = true;
-  startButton.textContent = "Starting...";
-
-  const mindarThree = new MindARThree({
-    container: arContainer,
-    imageTargetSrc: "./targets.mind",
-  });
-
-  const { renderer, scene, camera } = mindarThree;
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1));
-
-  function createVideoPlane(videoFile, x, y, scale) {
-    const video = document.createElement("video");
-    video.src = videoFile;
-    video.loop = true;
-    video.muted = true;
-    video.playsInline = true;
-    video.setAttribute("playsinline", "");
-    video.setAttribute("webkit-playsinline", "");
-
-    const texture = new THREE.VideoTexture(video);
-    const geometry = new THREE.PlaneGeometry(1, 1);
-    const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
-    const mesh = new THREE.Mesh(geometry, material);
-
-    mesh.position.set(x, y, 0.01);
-    mesh.scale.set(scale, scale, 1);
-
-    video.play().catch(() => {});
-    return mesh;
-  }
-
-  const anchor0 = mindarThree.addAnchor(0);
-  anchor0.group.add(createVideoPlane("p1_anim1.webm", -0.3,  0.25, 0.5));
-  anchor0.group.add(createVideoPlane("p1_anim2.webm",  0.3,  0.2,  0.5));
-  anchor0.group.add(createVideoPlane("p1_anim3.webm",  0.0, -0.3,  0.7));
-
-  const anchor1 = mindarThree.addAnchor(1);
-  anchor1.group.add(createVideoPlane("p2_anim1.webm", -0.3,  0.25, 0.5));
-  anchor1.group.add(createVideoPlane("p2_anim2.webm",  0.3,  0.2,  0.5));
-  anchor1.group.add(createVideoPlane("p2_anim3.webm",  0.0, -0.3,  0.7));
-
-  const anchor2 = mindarThree.addAnchor(2);
-  anchor2.group.add(createVideoPlane("p3_anim1.webm", -0.3,  0.25, 0.5));
-  anchor2.group.add(createVideoPlane("p3_anim2.webm",  0.3,  0.2,  0.5));
-  anchor2.group.add(createVideoPlane("p3_anim3.webm",  0.0, -0.3,  0.7));
-
-  try {
-    await mindarThree.start();
-  } catch (e) {
-    startButton.disabled = false;
-    startButton.textContent = "Tap to Start AR";
-    info.textContent = "Camera blocked. Open in Safari and allow Camera.";
-    return;
-  }
-
-  overlay.style.display = "none";
-
-  renderer.setAnimationLoop(() => {
-    renderer.render(scene, camera);
-  });
-}
-</script>
-
+  <button id="btn" onclick="alert('Button works');">TAP ME</button>
+  <div id="note">If you cannot tap this, something is covering the page or Safari is not showing the updated file.</div>
 </body>
 </html>

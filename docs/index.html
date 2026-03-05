@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Poster AR</title>
+
+  <style>
+    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; }
+    #startBtn {
+      position: fixed;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      padding: 14px 18px;
+      font-size: 16px;
+      border: 0;
+      border-radius: 10px;
+      z-index: 10000;
+    }
+    #info {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      padding: 12px 14px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-size: 14px;
+      color: white;
+      background: rgba(0,0,0,0.55);
+      text-align: center;
+      z-index: 9999;
+    }
+    #errorBox {
+      position: fixed;
+      left: 12px; right: 12px; top: 12px;
+      padding: 10px 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      color: #fff;
+      background: rgba(160,0,0,0.75);
+      white-space: pre-wrap;
+      z-index: 10001;
+      display: none;
+    }
+  </style>
+
+  <!-- IMPORTANT: type these filenames manually (normal hyphens "-") -->
+  <script src="./three.min.js" onload="window.__threeLoaded = true"></script>
+  <script src="./mindar-image-three.prod.js" onload="window.__mindarFileLoaded = true"></script>
+</head>
+
+<body>
+  <div id="errorBox"></div>
+  <button id="startBtn">Tap to Start AR</button>
+  <div id="info">After starting, point at any poster.</div>
+
+<script>
+  const errorBox = document.getElementById("errorBox");
+  const info = document.getElementById("info");
+  function showError(msg) {
+    errorBox.style.display = "block";
+    errorBox.textContent = msg;
+  }
+
+  window.addEventListener("error", (e) => {
+    showError("JS error:\n" + (e.message || e.error) + "\n" + (e.filename || "") + ":" + (e.lineno || ""));
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    showError("Promise rejection:\n" + (e.reason?.message || e.reason || "Unknown"));
+  });
+
+  const PLACEMENTS = {
+    0: [
+      { x: -0.30, y:  0.25, scale: 0.55, file: "p1_anim1.webm" },
+      { x:  0.30, y:  0.20, scale: 0.55, file: "p1_anim2.webm" },
+      { x:  0.00, y: -0.30, scale: 0.70, file: "p1_anim3.webm" },
+    ],
+    1: [
+      { x: -0.30, y:  0.25, scale: 0.55, file: "p2_anim1.webm" },
+      { x:  0.30, y:  0.20, scale: 0.55, file: "p2_anim2.webm" },
+      { x:  0.00, y: -0.30, scale: 0.70, file: "p2_anim3.webm" },
+    ],
+    2: [
+      { x: -0.30, y:  0.25, scale: 0.55, file: "p3_anim1.webm" },
+      { x:  0.30, y:  0.20, scale: 0.55, file: "p3_anim2.webm" },
+      { x:  0.00, y: -0.30, scale: 0.70, file: "p3_anim3.webm" },
+    ],
+  };
+
+  function makeVideo(src) {
+    const v = document.createElement("video");
+    v.src = src;
+    v.loop = true;
+    v.muted = true;
+    v.preload = "auto";
+    v.setAttribute("playsinline", "");
+    v.setAttribute("webkit-playsinline", "");
+    v.setAttribute("muted", "");
+    v.playsInline = true;
+    return v;
+  }
+
+  async function startAR() {
+    const btn = document.getElementById("startBtn");
+    btn.disabled = true;
+    btn.textContent = "Starting...";
+
+    // 1) Check that the script tags actually loaded
+    if (!window.__threeLoaded || !window.THREE) {
+      showError(
+        "THREE did not load.\n\n" +
+        "Fix:\n" +
+        "1) Confirm this URL shows code:\n" +
+        "   /three.min.js\n" +
+        "2) Confirm index.html has:\n" +
+        "   <script src=\"./three.min.js\">"
+      );
+      return;
+    }
+
+    if (!window.__mindarFileLoaded) {
+      showError(
+        "MindAR script file did not finish loading.\n\n" +
+        "Fix:\n" +
+        "1) Confirm this URL shows code:\n" +
+        "   /mindar-image-three.prod.js\n" +
+        "2) Re-type the filename in index.html using normal '-' hyphens."
+      );
+      return;
+    }
+
+    if (!(window.MINDAR && window.MINDAR.IMAGE && window.MINDAR.IMAGE.MindARThree)) {
+      showError(
+        "MindAR file loaded, but window.MINDAR is still missing.\n\n" +
+        "This usually means Safari used an older cached index.html or a script error occurred earlier.\n" +
+        "Try opening the page in a Private tab, then reload."
+      );
+      return;
+    }
+
+    const mindarThree = new window.MINDAR.IMAGE.MindARThree({
+      container: document.body,
+      imageTargetSrc: "./targets.mind",
+    });
+
+    const { renderer, scene, camera } = mindarThree;
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
+
+    const plane = new THREE.PlaneGeometry(1, 1);
+    const anchors = [mindarThree.addAnchor(0), mindarThree.addAnchor(1), mindarThree.addAnchor(2)];
+    const videosByTarget = { 0: [], 1: [], 2: [] };
+
+    for (const targetIndex of [0, 1, 2]) {
+      const anchor = anchors[targetIndex];
+
+      for (const item of PLACEMENTS[targetIndex]) {
+        const video = makeVideo(item.file);
+        videosByTarget[targetIndex].push(video);
+
+        const texture = new THREE.VideoTexture(video);
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.generateMipmaps = false;
+
+        const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide });
+        const mesh = new THREE.Mesh(plane, material);
+
+        mesh.position.set(item.x, item.y, 0.01);
+        mesh.scale.set(item.scale, item.scale, 1);
+        anchor.group.add(mesh);
+      }
+
+      anchor.onTargetFound = () => {
+        info.textContent = `Poster ${targetIndex + 1} detected`;
+        for (const v of videosByTarget[targetIndex]) v.play().catch(() => {});
+      };
+      anchor.onTargetLost = () => {
+        info.textContent = "Point at any poster";
+        for (const v of videosByTarget[targetIndex]) v.pause();
+      };
+    }
+
+    try {
+      await mindarThree.start(); // iPhone should ask for camera permission here
+    } catch (err) {
+      showError(
+        "Camera did not start.\n\n" +
+        "On iPhone: open in Safari and allow Camera.\n\n" +
+        "Error:\n" + (err?.message || err)
+      );
+      return;
+    }
+
+    btn.style.display = "none";
+    renderer.setAnimationLoop(() => renderer.render(scene, camera));
+  }
+
+  document.getElementById("startBtn").addEventListener("click", startAR);
+</script>
+</body>
+</html>

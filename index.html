@@ -1,197 +1,143 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Poster AR</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <style>
-    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; }
-    #startBtn {
-      position: fixed;
-      left: 50%; top: 50%;
-      transform: translate(-50%, -50%);
-      padding: 14px 18px;
-      font-size: 16px;
-      border: 0;
-      border-radius: 10px;
-      z-index: 10000;
-    }
-    #info {
-      position: fixed;
-      left: 0; right: 0; bottom: 0;
-      padding: 12px 14px;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      font-size: 14px;
-      color: white;
-      background: rgba(0,0,0,0.55);
-      text-align: center;
-      z-index: 9999;
-    }
-    #errorBox {
-      position: fixed;
-      left: 12px; right: 12px; top: 12px;
-      padding: 10px 12px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 12px;
-      color: #fff;
-      background: rgba(160,0,0,0.75);
-      white-space: pre-wrap;
-      z-index: 10001;
-      display: none;
-    }
-  </style>
+<title>Poster AR</title>
 
-  <!-- Import map: tells MindAR where to import "three" from -->
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "./three.module.js",
-      "mindar-image-three": "./mindar-image-three.prod.js"
-    }
+<style>
+html, body {
+  margin:0;
+  padding:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:black;
+}
+
+#startButton{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  padding:15px 25px;
+  font-size:18px;
+}
+
+#info{
+  position:absolute;
+  bottom:10px;
+  left:0;
+  right:0;
+  text-align:center;
+  color:white;
+  font-family:sans-serif;
+}
+</style>
+
+<!-- Import map -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "./three.module.js",
+    "mindar-image-three": "./mindar-image-three.prod.js"
   }
-  </script>
+}
+</script>
+
 </head>
 
 <body>
-  <div style="position:fixed;top:0;left:0;right:0;background:yellow;color:black;padding:6px;z-index:20000;font-family:sans-serif">
-VERSION MODULE 1
-</div>
-  <div id="errorBox"></div>
-  <button id="startBtn">Tap to Start AR</button>
-  <div id="info">After starting, point at any poster.</div>
 
-  <script type="module">
-    import * as THREE from "three";
-    import { MindARThree } from "mindar-image-three";
+<button id="startButton">Tap to Start AR</button>
+<div id="info">Point camera at poster</div>
 
-    const errorBox = document.getElementById("errorBox");
-    const info = document.getElementById("info");
-    const btn = document.getElementById("startBtn");
+<script type="module">
 
-    function showError(msg) {
-      errorBox.style.display = "block";
-      errorBox.textContent = msg;
-    }
+import * as THREE from "three";
+import { MindARThree } from "mindar-image-three";
 
-    window.addEventListener("error", (e) => {
-      showError("JS error:\n" + (e.message || e.error) + "\n" + (e.filename || "") + ":" + (e.lineno || ""));
-    });
-    window.addEventListener("unhandledrejection", (e) => {
-      showError("Promise rejection:\n" + (e.reason?.message || e.reason || "Unknown"));
-    });
+const startButton = document.querySelector("#startButton");
 
-    // Change positions and scales here
-    const PLACEMENTS = {
-      0: [
-        { x: -0.30, y:  0.25, scale: 0.55, file: "p1_anim1.webm" },
-        { x:  0.30, y:  0.20, scale: 0.55, file: "p1_anim2.webm" },
-        { x:  0.00, y: -0.30, scale: 0.70, file: "p1_anim3.webm" }
-      ],
-      1: [
-        { x: -0.30, y:  0.25, scale: 0.55, file: "p2_anim1.webm" },
-        { x:  0.30, y:  0.20, scale: 0.55, file: "p2_anim2.webm" },
-        { x:  0.00, y: -0.30, scale: 0.70, file: "p2_anim3.webm" }
-      ],
-      2: [
-        { x: -0.30, y:  0.25, scale: 0.55, file: "p3_anim1.webm" },
-        { x:  0.30, y:  0.20, scale: 0.55, file: "p3_anim2.webm" },
-        { x:  0.00, y: -0.30, scale: 0.70, file: "p3_anim3.webm" }
-      ]
-    };
+startButton.addEventListener("click", startAR);
 
-    function makeVideo(src) {
-      const v = document.createElement("video");
-      v.src = src;
-      v.loop = true;
-      v.muted = true;
-      v.preload = "auto";
-      v.playsInline = true;
-      v.setAttribute("playsinline", "");
-      v.setAttribute("webkit-playsinline", "");
-      v.setAttribute("muted", "");
-      return v;
-    }
+async function startAR(){
 
-    btn.addEventListener("click", async () => {
-      btn.disabled = true;
-      btn.textContent = "Starting...";
+startButton.style.display="none";
 
-      let mindarThree;
-      try {
-        mindarThree = new MindARThree({
-          container: document.body,
-          imageTargetSrc: "./targets.mind"
-        });
-      } catch (e) {
-        showError("Could not create MindAR.\n\n" + (e?.message || e));
-        return;
-      }
+const mindarThree = new MindARThree({
+  container: document.body,
+  imageTargetSrc: "./targets.mind",
+});
 
-      const { renderer, scene, camera } = mindarThree;
+const {renderer, scene, camera} = mindarThree;
 
-      scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
+const light = new THREE.HemisphereLight(0xffffff,0xbbbbff,1);
+scene.add(light);
 
-      const plane = new THREE.PlaneGeometry(1, 1);
+function createVideoPlane(videoFile,x,y,scale){
 
-      const anchors = [
-        mindarThree.addAnchor(0),
-        mindarThree.addAnchor(1),
-        mindarThree.addAnchor(2)
-      ];
+const video=document.createElement("video");
+video.src=videoFile;
+video.loop=true;
+video.muted=true;
+video.playsInline=true;
+video.setAttribute("playsinline","");
+video.setAttribute("webkit-playsinline","");
 
-      const videosByTarget = { 0: [], 1: [], 2: [] };
+const texture=new THREE.VideoTexture(video);
 
-      for (const targetIndex of [0, 1, 2]) {
-        const anchor = anchors[targetIndex];
+const geometry=new THREE.PlaneGeometry(1,1);
+const material=new THREE.MeshBasicMaterial({
+map:texture,
+transparent:true
+});
 
-        for (const item of PLACEMENTS[targetIndex]) {
-          const video = makeVideo(item.file);
-          videosByTarget[targetIndex].push(video);
+const mesh=new THREE.Mesh(geometry,material);
 
-          const texture = new THREE.VideoTexture(video);
-          texture.generateMipmaps = false;
-          texture.minFilter = THREE.LinearFilter;
-          texture.magFilter = THREE.LinearFilter;
+mesh.position.set(x,y,0.01);
+mesh.scale.set(scale,scale,1);
 
-          const material = new THREE.MeshBasicMaterial({
-            map: texture,
-            transparent: true,
-            side: THREE.DoubleSide
-          });
+video.play();
 
-          const mesh = new THREE.Mesh(plane, material);
-          mesh.position.set(item.x, item.y, 0.01);
-          mesh.scale.set(item.scale, item.scale, 1);
+return mesh;
 
-          anchor.group.add(mesh);
-        }
+}
 
-        anchor.onTargetFound = () => {
-          info.textContent = `Poster ${targetIndex + 1} detected`;
-          for (const v of videosByTarget[targetIndex]) v.play().catch(() => {});
-        };
+/* Poster 1 */
 
-        anchor.onTargetLost = () => {
-          info.textContent = "Point at any poster";
-          for (const v of videosByTarget[targetIndex]) v.pause();
-        };
-      }
+const anchor0=mindarThree.addAnchor(0);
 
-      try {
-        await mindarThree.start(); // iPhone should ask for camera permission here
-      } catch (e) {
-        showError(
-          "Camera did not start.\n\n" +
-          "On iPhone: open in Safari and allow Camera.\n\n" +
-          "Error:\n" + (e?.message || e)
-        );
-        return;
-      }
+anchor0.group.add(createVideoPlane("p1_anim1.webm",-0.3,0.25,0.5));
+anchor0.group.add(createVideoPlane("p1_anim2.webm",0.3,0.2,0.5));
+anchor0.group.add(createVideoPlane("p1_anim3.webm",0,-0.3,0.7));
 
-      btn.style.display = "none";
-      renderer.setAnimationLoop(() => renderer.render(scene, camera));
-    });
-  </script>
+/* Poster 2 */
+
+const anchor1=mindarThree.addAnchor(1);
+
+anchor1.group.add(createVideoPlane("p2_anim1.webm",-0.3,0.25,0.5));
+anchor1.group.add(createVideoPlane("p2_anim2.webm",0.3,0.2,0.5));
+anchor1.group.add(createVideoPlane("p2_anim3.webm",0,-0.3,0.7));
+
+/* Poster 3 */
+
+const anchor2=mindarThree.addAnchor(2);
+
+anchor2.group.add(createVideoPlane("p3_anim1.webm",-0.3,0.25,0.5));
+anchor2.group.add(createVideoPlane("p3_anim2.webm",0.3,0.2,0.5));
+anchor2.group.add(createVideoPlane("p3_anim3.webm",0,-0.3,0.7));
+
+await mindarThree.start();
+
+renderer.setAnimationLoop(()=>{
+renderer.render(scene,camera);
+});
+
+}
+
+</script>
+
 </body>
 </html>

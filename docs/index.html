@@ -67,7 +67,7 @@ canvas, video {
 
 <body>
   <div id="container"></div>
-  <div id="ver">WEBP 01</div>
+  <div id="ver">WEBP 02</div>
   <div id="info">Tap Start Camera.</div>
   <button id="btn" type="button">Start Camera</button>
 
@@ -76,20 +76,6 @@ const btn = document.getElementById("btn");
 const info = document.getElementById("info");
 const container = document.getElementById("container");
 let started = false;
-
-function makeVideo(file) {
-  const v = document.createElement("video");
-  v.src = file;
-  v.loop = true;
-  v.muted = true;
-  v.preload = "auto";
-  v.playsInline = true;
-  v.setAttribute("playsinline", "");
-  v.setAttribute("webkit-playsinline", "");
-  v.setAttribute("muted", "");
-  v.style.pointerEvents = "none";
-  return v;
-}
 
 async function startAR() {
   if (started) return;
@@ -118,63 +104,55 @@ async function startAR() {
     const planeGeo = new THREE.PlaneGeometry(1, 1);
 
     function addImageToAnchor(anchor, file, x, y, scale) {
+      const texture = new THREE.TextureLoader().load(file);
 
-  const texture = new THREE.TextureLoader().load(file);
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        side: THREE.DoubleSide
+      });
 
-  const material = new THREE.MeshBasicMaterial({
-    map: texture,
-    transparent: true,
-    side: THREE.DoubleSide
-  });
+      const mesh = new THREE.Mesh(planeGeo, material);
+      mesh.position.set(x, y, 0.01);
+      mesh.scale.set(scale, scale, 1);
 
-  const mesh = new THREE.Mesh(planeGeo, material);
-
-  mesh.position.set(x, y, 0.01);
-  mesh.scale.set(scale, scale, 1);
-
-  anchor.group.add(mesh);
-}
+      anchor.group.add(mesh);
+    }
 
     // Poster 1 = target index 0
     const anchor0 = mindarThree.addAnchor(0);
-    const video0 = addVideoToAnchor(anchor0, "p1_anim1.webp", 0, 0, 0.7);
+    addImageToAnchor(anchor0, "p1_anim1.webp", 0, 0, 0.7);
 
     anchor0.onTargetFound = () => {
       info.textContent = "FOUND poster 1";
-      video0.play().catch(() => {});
     };
 
     anchor0.onTargetLost = () => {
       info.textContent = "LOST poster 1";
-      video0.pause();
     };
 
     // Poster 2 = target index 1
     const anchor1 = mindarThree.addAnchor(1);
-    const video1 = addVideoToAnchor(anchor1, "p2_anim1.webp", 0, 0, 0.7);
+    addImageToAnchor(anchor1, "p2_anim1.webp", 0, 0, 0.7);
 
     anchor1.onTargetFound = () => {
       info.textContent = "FOUND poster 2";
-      video1.play().catch(() => {});
     };
 
     anchor1.onTargetLost = () => {
       info.textContent = "LOST poster 2";
-      video1.pause();
     };
 
     // Poster 3 = target index 2
     const anchor2 = mindarThree.addAnchor(2);
-    const video2 = addVideoToAnchor(anchor2, "p3_anim1.webp", 0, 0, 0.7);
+    addImageToAnchor(anchor2, "p3_anim1.webp", 0, 0, 0.7);
 
     anchor2.onTargetFound = () => {
       info.textContent = "FOUND poster 3";
-      video2.play().catch(() => {});
     };
 
     anchor2.onTargetLost = () => {
       info.textContent = "LOST poster 3";
-      video2.pause();
     };
 
     await mindarThree.start();

@@ -48,18 +48,45 @@ async function startAR() {
   btn.textContent = "Loading...";
   info.textContent = "Loading AR libraries...";
 
-  try {
-    // esm.sh rewrites/bundles dependencies so MindAR's internal imports resolve on Safari
-    const mod = await import("https://esm.sh/mind-ar@1.2.5/dist/mindar-image-three.prod.js?deps=three@0.150.0");
-    const MindARThree = mod.MindARThree;
+try {
+  const mindarThree = new MindARThree({
+    container,
+    imageTargetSrc: "./targets.mind"
+  });
 
-    btn.textContent = "Starting...";
-    info.textContent = "Requesting camera permission...";
+  const { renderer, scene, camera } = mindarThree;
 
-    const mindarThree = new MindARThree({
-      container,
-      imageTargetSrc: "./targets.mind"
-    });
+  // Simple light so we can see objects
+  const THREE = (await import("https://esm.sh/three@0.150.0")).default || (await import("https://esm.sh/three@0.150.0"));
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
+
+  // Create a bright rectangle so it's obvious when tracking works
+  const geometry = new THREE.PlaneGeometry(1, 0.5);
+  const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.set(0, 0, 0.01);
+
+  const anchor0 = mindarThree.addAnchor(0);
+  anchor0.group.add(mesh);
+
+  anchor0.onTargetFound = () => { info.textContent = "FOUND target 1"; };
+  anchor0.onTargetLost  = () => { info.textContent = "LOST target 1";  };
+
+  await mindarThree.start();
+
+  btn.style.display = "none";
+  info.textContent = "Running. Point at poster.";
+
+  renderer.setAnimationLoop(() => renderer.render(scene, camera));
+} catch (e) {
+  started = false;
+  btn.disabled = false;
+  btn.textContent = "Start Camera";
+  info.textContent =
+    "FAILED\n\n" +
+    "Name: " + (e && e.name ? e.name : "unknown") + "\n" +
+    "Message: " + (e && e.message ? e.message : String(e));
+}
 
     await mindarThree.start(); // camera permission prompt happens here
 

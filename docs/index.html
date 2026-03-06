@@ -71,6 +71,7 @@ function makeVideo(file) {
   v.setAttribute("playsinline", "");
   v.setAttribute("webkit-playsinline", "");
   v.setAttribute("muted", "");
+  v.style.pointerEvents = "none";
   return v;
 }
 

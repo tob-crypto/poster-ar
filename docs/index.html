@@ -3,36 +3,71 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Poster AR</title>
+<title>Poster AR Test</title>
 
 <style>
-html, body { margin:0; width:100%; height:100%; overflow:hidden; background:#000; }
-#container { position:fixed; inset:0; z-index:0; }
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+#container {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
 #btn {
-  position:fixed; left:12px; right:12px; bottom:16px;
-  z-index:2147483647; font-size:20px; padding:18px 16px; border:0; border-radius:12px;
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 16px;
+  z-index: 2147483647;
+  font-size: 20px;
+  padding: 18px 16px;
+  border: 0;
+  border-radius: 12px;
   touch-action: manipulation;
 }
+
 #info {
-  position:fixed; left:0; right:0; bottom:76px;
-  padding:10px 12px; color:#fff; background:rgba(0,0,0,0.65);
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 76px;
+  padding: 10px 12px;
+  color: #fff;
+  background: rgba(0,0,0,0.65);
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  z-index:2147483646; white-space:pre-wrap;
+  z-index: 2147483646;
+  white-space: pre-wrap;
 }
+
 #ver {
-  position:fixed; top:10px; right:10px;
-  padding:6px 8px; background:rgba(255,255,0,0.9); color:#000;
-  font-family:sans-serif; font-size:12px; z-index:2147483647;
-  pointer-events:none;
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  padding: 6px 8px;
+  background: rgba(255,255,0,0.9);
+  color: #000;
+  font-family: sans-serif;
+  font-size: 12px;
+  z-index: 2147483647;
+  pointer-events: none;
 }
-/* Prevent canvases/videos from stealing taps */
-canvas, video { pointer-events:none !important; }
+
+canvas, video {
+  pointer-events: none !important;
+}
 </style>
 </head>
 
 <body>
   <div id="container"></div>
-  <div id="ver">DOCS v13 FULL</div>
+  <div id="ver">DOCS v14 ONE POSTER</div>
   <div id="info">Tap Start Camera.</div>
   <button id="btn" type="button">Start Camera</button>
 
@@ -41,25 +76,6 @@ const btn = document.getElementById("btn");
 const info = document.getElementById("info");
 const container = document.getElementById("container");
 let started = false;
-
-// Your placements: adjust x/y/scale later for each animation
-const PLACEMENTS = {
-  0: [
-    { x:-0.30, y: 0.25, s:0.55, file:"p1_anim1.webm" },
-    { x: 0.30, y: 0.20, s:0.55, file:"p1_anim2.webm" },
-    { x: 0.00, y:-0.30, s:0.70, file:"p1_anim3.webm" },
-  ],
-  1: [
-    { x:-0.30, y: 0.25, s:0.55, file:"p2_anim1.webm" },
-    { x: 0.30, y: 0.20, s:0.55, file:"p2_anim2.webm" },
-    { x: 0.00, y:-0.30, s:0.70, file:"p2_anim3.webm" },
-  ],
-  2: [
-    { x:-0.30, y: 0.25, s:0.55, file:"p3_anim1.webm" },
-    { x: 0.30, y: 0.20, s:0.55, file:"p3_anim2.webm" },
-    { x: 0.00, y:-0.30, s:0.70, file:"p3_anim3.webm" },
-  ]
-};
 
 function makeVideo(file) {
   const v = document.createElement("video");
@@ -71,6 +87,7 @@ function makeVideo(file) {
   v.setAttribute("playsinline", "");
   v.setAttribute("webkit-playsinline", "");
   v.setAttribute("muted", "");
+  v.style.pointerEvents = "none";
   return v;
 }
 
@@ -97,66 +114,48 @@ async function startAR() {
     });
 
     const { renderer, scene, camera } = mindarThree;
+
     scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
 
-    const planeGeo = new THREE.PlaneGeometry(1, 1);
+    const anchor0 = mindarThree.addAnchor(0);
 
-    // Track videos per target so we can play/pause
-    const videosByTarget = { 0: [], 1: [], 2: [] };
+    const video = makeVideo("p1_anim1.webm");
+    const texture = new THREE.VideoTexture(video);
+    texture.generateMipmaps = false;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
 
-    function addVideoPlane(anchor, targetIndex, item) {
-      const video = makeVideo(item.file);
-      videosByTarget[targetIndex].push(video);
+    const geometry = new THREE.PlaneGeometry(1, 1);
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      side: THREE.DoubleSide
+    });
 
-      const texture = new THREE.VideoTexture(video);
-      texture.generateMipmaps = false;
-      texture.minFilter = THREE.LinearFilter;
-      texture.magFilter = THREE.LinearFilter;
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(0, 0, 0.01);
+    mesh.scale.set(0.7, 0.7, 1);
 
-      const mat = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        side: THREE.DoubleSide
-      });
+    anchor0.group.add(mesh);
 
-      const mesh = new THREE.Mesh(planeGeo, mat);
-      mesh.position.set(item.x, item.y, 0.01);
-      mesh.scale.set(item.s, item.s, 1);
+    anchor0.onTargetFound = () => {
+      info.textContent = "FOUND poster 1";
+      video.play().catch(() => {});
+    };
 
-      anchor.group.add(mesh);
-    }
-
-    // Create anchors and add 3 videos each
-    const anchors = [
-      mindarThree.addAnchor(0),
-      mindarThree.addAnchor(1),
-      mindarThree.addAnchor(2)
-    ];
-
-    for (const targetIndex of [0,1,2]) {
-      const anchor = anchors[targetIndex];
-
-      for (const item of PLACEMENTS[targetIndex]) {
-        addVideoPlane(anchor, targetIndex, item);
-      }
-
-      anchor.onTargetFound = () => {
-        info.textContent = `FOUND poster ${targetIndex + 1}`;
-        for (const v of videosByTarget[targetIndex]) v.play().catch(()=>{});
-      };
-
-      anchor.onTargetLost = () => {
-        info.textContent = "Point at a poster";
-        for (const v of videosByTarget[targetIndex]) v.pause();
-      };
-    }
+    anchor0.onTargetLost = () => {
+      info.textContent = "LOST poster 1";
+      video.pause();
+    };
 
     await mindarThree.start();
 
     btn.style.display = "none";
-    info.textContent = "Running. Point at a poster.";
+    info.textContent = "Running. Point at poster 1.";
 
-    renderer.setAnimationLoop(() => renderer.render(scene, camera));
+    renderer.setAnimationLoop(() => {
+      renderer.render(scene, camera);
+    });
 
   } catch (e) {
     started = false;
@@ -169,8 +168,15 @@ async function startAR() {
   }
 }
 
-btn.addEventListener("touchend", (ev) => { ev.preventDefault(); startAR(); }, { passive:false });
-btn.addEventListener("click", (ev) => { ev.preventDefault(); startAR(); });
+btn.addEventListener("touchend", (ev) => {
+  ev.preventDefault();
+  startAR();
+}, { passive:false });
+
+btn.addEventListener("click", (ev) => {
+  ev.preventDefault();
+  startAR();
+});
 </script>
 </body>
 </html>

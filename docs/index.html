@@ -50,7 +50,7 @@ async function startAR() {
 
   try {
     // esm.sh rewrites/bundles dependencies so MindAR's internal imports resolve on Safari
-    const mod = await import("https://esm.sh/mind-ar@1.2.5/dist/mindar-image-three.prod.js");
+    const mod = await import("https://esm.sh/mind-ar@1.2.5/dist/mindar-image-three.prod.js?deps=three@0.150.0");
     const MindARThree = mod.MindARThree;
 
     btn.textContent = "Starting...";

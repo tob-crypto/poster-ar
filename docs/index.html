@@ -67,7 +67,7 @@ canvas, video {
 
 <body>
   <div id="container"></div>
-  <div id="ver">DOCS v15 THREE POSTERS</div>
+  <div id="ver">WEBP 01</div>
   <div id="info">Tap Start Camera.</div>
   <button id="btn" type="button">Start Camera</button>
 
@@ -117,30 +117,27 @@ async function startAR() {
 
     const planeGeo = new THREE.PlaneGeometry(1, 1);
 
-    function addVideoToAnchor(anchor, file, x, y, scale) {
-      const video = makeVideo(file);
-      const texture = new THREE.VideoTexture(video);
-      texture.generateMipmaps = false;
-      texture.minFilter = THREE.LinearFilter;
-      texture.magFilter = THREE.LinearFilter;
+    function addImageToAnchor(anchor, file, x, y, scale) {
 
-      const material = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        side: THREE.DoubleSide
-      });
+  const texture = new THREE.TextureLoader().load(file);
 
-      const mesh = new THREE.Mesh(planeGeo, material);
-      mesh.position.set(x, y, 0.01);
-      mesh.scale.set(scale, scale, 1);
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    side: THREE.DoubleSide
+  });
 
-      anchor.group.add(mesh);
-      return video;
-    }
+  const mesh = new THREE.Mesh(planeGeo, material);
+
+  mesh.position.set(x, y, 0.01);
+  mesh.scale.set(scale, scale, 1);
+
+  anchor.group.add(mesh);
+}
 
     // Poster 1 = target index 0
     const anchor0 = mindarThree.addAnchor(0);
-    const video0 = addVideoToAnchor(anchor0, "p1_anim1.webm", 0, 0, 0.7);
+    const video0 = addVideoToAnchor(anchor0, "p1_anim1.webp", 0, 0, 0.7);
 
     anchor0.onTargetFound = () => {
       info.textContent = "FOUND poster 1";
@@ -154,7 +151,7 @@ async function startAR() {
 
     // Poster 2 = target index 1
     const anchor1 = mindarThree.addAnchor(1);
-    const video1 = addVideoToAnchor(anchor1, "p2_anim1.webm", 0, 0, 0.7);
+    const video1 = addVideoToAnchor(anchor1, "p2_anim1.webp", 0, 0, 0.7);
 
     anchor1.onTargetFound = () => {
       info.textContent = "FOUND poster 2";
@@ -168,7 +165,7 @@ async function startAR() {
 
     // Poster 3 = target index 2
     const anchor2 = mindarThree.addAnchor(2);
-    const video2 = addVideoToAnchor(anchor2, "p3_anim1.webm", 0, 0, 0.7);
+    const video2 = addVideoToAnchor(anchor2, "p3_anim1.webp", 0, 0, 0.7);
 
     anchor2.onTargetFound = () => {
       info.textContent = "FOUND poster 3";

@@ -15,37 +15,28 @@ html, body {
   background: #000;
 }
 
-/* If you want a background layer, it MUST NOT steal taps */
-#bg {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background: #000;
-  pointer-events: none; /* CRITICAL */
-}
-
-/* AR container behind everything and never steals taps */
+/* AR container stays behind everything */
 #ar-container {
   position: fixed;
   inset: 0;
-  z-index: 1;
-  pointer-events: none; /* CRITICAL */
+  z-index: 0;
+  pointer-events: none;
 }
 
-/* Extra safety: canvases/videos never steal taps */
+/* Guarantee nothing steals taps */
 canvas, video {
   pointer-events: none !important;
 }
 
-/* Start button: very top layer, easy to tap */
+/* Very safe, always-on-top button */
 #startButton {
   position: fixed;
   left: 12px;
   right: 12px;
-  top: 12px;
+  bottom: 16px;
   z-index: 2147483647;
   font-size: 20px;
-  padding: 16px 14px;
+  padding: 18px 16px;
   border: 0;
   border-radius: 12px;
   pointer-events: auto;
@@ -57,8 +48,8 @@ canvas, video {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
-  padding: 12px 14px;
+  bottom: 76px;
+  padding: 10px 12px;
   color: #fff;
   background: rgba(0,0,0,0.65);
   text-align: center;
@@ -68,11 +59,11 @@ canvas, video {
   pointer-events: none;
 }
 
-/* Small label to confirm correct file */
+/* Version label */
 #ver {
   position: fixed;
-  right: 12px;
-  top: 12px;
+  top: 10px;
+  right: 10px;
   padding: 6px 8px;
   background: rgba(255,255,0,0.9);
   color: #000;
@@ -82,29 +73,16 @@ canvas, video {
   pointer-events: none;
 }
 </style>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "./three.module.js",
-    "mindar-image-three": "./mindar-image-three.prod.js"
-  }
-}
-</script>
 </head>
 
 <body>
-<div id="bg"></div>
-<div id="ar-container"></div>
+  <div id="ar-container"></div>
 
-<div id="ver">AR DOCS v9</div>
-<button id="startButton" type="button">Start camera</button>
-<div id="info">Tap Start camera, allow Camera, then point at a poster.</div>
+  <div id="ver">AR DOCS v10</div>
+  <div id="info">Tap Start Camera. Safari should ask for Camera permission.</div>
+  <button id="startButton" type="button">Start Camera</button>
 
 <script type="module">
-import * as THREE from "three";
-import { MindARThree } from "mindar-image-three";
-
 const arContainer = document.getElementById("ar-container");
 const startButton = document.getElementById("startButton");
 const info = document.getElementById("info");
@@ -147,7 +125,25 @@ async function startAR() {
   started = true;
 
   startButton.disabled = true;
-  startButton.textContent = "Starting...";
+  startButton.textContent = "Loading AR...";
+  info.textContent = "Loading libraries...";
+
+  // Load libraries only after the user taps
+  let THREE, MindARThree;
+  try {
+    const threeMod = await import("./three.module.js");
+    THREE = threeMod;
+
+    const mindarMod = await import("./mindar-image-three.prod.js");
+    MindARThree = mindarMod.MindARThree;
+  } catch (e) {
+    started = false;
+    startButton.disabled = false;
+    startButton.textContent = "Start Camera";
+    info.textContent = "Failed to load AR libraries. Check three.module.js and mindar-image-three.prod.js are reachable.";
+    return;
+  }
+
   info.textContent = "Requesting camera permission...";
 
   const mindarThree = new MindARThree({
@@ -189,7 +185,6 @@ async function startAR() {
       const mesh = new THREE.Mesh(plane, material);
       mesh.position.set(item.x, item.y, 0.01);
       mesh.scale.set(item.scale, item.scale, 1);
-
       anchor.group.add(mesh);
     }
 
@@ -205,23 +200,22 @@ async function startAR() {
   }
 
   try {
-    await mindarThree.start(); // Safari should ask for camera permission here
+    await mindarThree.start();
   } catch (e) {
     started = false;
     startButton.disabled = false;
-    startButton.textContent = "Start camera";
+    startButton.textContent = "Start Camera";
     info.textContent = "Camera blocked. iPhone Settings > Safari > Camera > Allow.";
     return;
   }
 
   startButton.style.display = "none";
   info.textContent = "Camera started. Point at a poster.";
-
   renderer.setAnimationLoop(() => renderer.render(scene, camera));
 }
 
-/* iPhone Safari: both touch and click */
-startButton.addEventListener("touchstart", (ev) => {
+// iPhone Safari: prioritize touch
+startButton.addEventListener("touchend", (ev) => {
   ev.preventDefault();
   startAR();
 }, { passive: false });
@@ -231,6 +225,5 @@ startButton.addEventListener("click", (ev) => {
   startAR();
 });
 </script>
-
 </body>
 </html>

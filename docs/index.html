@@ -3,213 +3,270 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Poster AR PNG Sequence</title>
+<title>Poster AR</title>
 
 <style>
 html, body {
-  margin: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: #000;
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#000;
 }
 
 #container {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
+  position:fixed;
+  inset:0;
+  z-index:0;
 }
 
 #btn {
-  position: fixed;
-  left: 12px;
-  right: 12px;
-  bottom: 16px;
-  z-index: 2147483647;
-  font-size: 20px;
-  padding: 18px 16px;
-  border: 0;
-  border-radius: 12px;
-  touch-action: manipulation;
+  position:fixed;
+  left:12px;
+  right:12px;
+  bottom:16px;
+  z-index:2147483647;
+  font-size:20px;
+  padding:18px 16px;
+  border:0;
+  border-radius:12px;
+  touch-action:manipulation;
 }
 
 #info {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 76px;
-  padding: 10px 12px;
-  color: #fff;
-  background: rgba(0,0,0,0.65);
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  z-index: 2147483646;
-  white-space: pre-wrap;
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:76px;
+  padding:10px 12px;
+  color:#fff;
+  background:rgba(0,0,0,0.65);
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  z-index:2147483646;
+  white-space:pre-wrap;
 }
 
 #ver {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  padding: 6px 8px;
-  background: rgba(255,255,0,0.9);
-  color: #000;
-  font-family: sans-serif;
-  font-size: 12px;
-  z-index: 2147483647;
-  pointer-events: none;
+  position:fixed;
+  top:10px;
+  right:10px;
+  padding:6px 8px;
+  background:rgba(255,255,0,0.9);
+  color:#000;
+  font-family:sans-serif;
+  font-size:12px;
+  z-index:2147483647;
 }
 
-canvas, video {
-  pointer-events: none !important;
+canvas {
+  pointer-events:none !important;
 }
 </style>
 </head>
 
 <body>
-  <div id="container"></div>
-  <div id="ver">PNG SEQ 01</div>
-  <div id="info">Tap Start Camera.</div>
-  <button id="btn" type="button">Start Camera</button>
+
+<div id="container"></div>
+<div id="ver">PNG AR v2</div>
+<div id="info">Tap Start Camera</div>
+<button id="btn">Start Camera</button>
 
 <script>
+
 const btn = document.getElementById("btn");
 const info = document.getElementById("info");
 const container = document.getElementById("container");
-let started = false;
 
-async function startAR() {
-  if (started) return;
-  started = true;
+let started=false;
 
-  btn.disabled = true;
-  btn.textContent = "Loading...";
-  info.textContent = "Loading AR libraries...";
-
-  try {
-    const mindarMod = await import("https://esm.sh/mind-ar@1.2.5/dist/mindar-image-three.prod.js?deps=three@0.150.0");
-    const THREE = await import("https://esm.sh/three@0.150.0");
-    const MindARThree = mindarMod.MindARThree;
-
-    btn.textContent = "Starting...";
-    info.textContent = "Requesting camera permission...";
-
-    const mindarThree = new MindARThree({
-      container,
-      imageTargetSrc: "./targets.mind"
-    });
-
-    const { renderer, scene, camera } = mindarThree;
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
-
-    const anchor0 = mindarThree.addAnchor(0);
-
-    const loader = new THREE.TextureLoader();
-
-const framePaths = [
-  "./p1_anim1_frames/p1_anim1_000.png",
-  "./p1_anim1_frames/p1_anim1_001.png",
-  "./p1_anim1_frames/p1_anim1_002.png",
-  "./p1_anim1_frames/p1_anim1_003.png",
-  "./p1_anim1_frames/p1_anim1_004.png",
-  "./p1_anim1_frames/p1_anim1_005.png",
-  "./p1_anim1_frames/p1_anim1_006.png",
-  "./p1_anim1_frames/p1_anim1_007.png",
-  "./p1_anim1_frames/p1_anim1_008.png",
-  "./p1_anim1_frames/p1_anim1_009.png",
-  "./p1_anim1_frames/p1_anim1_010.png",
-  "./p1_anim1_frames/p1_anim1_011.png",
-  "./p1_anim1_frames/p1_anim1_012.png",
-  "./p1_anim1_frames/p1_anim1_013.png",
-  "./p1_anim1_frames/p1_anim1_014.png",
-  "./p1_anim1_frames/p1_anim1_015.png",
-  "./p1_anim1_frames/p1_anim1_016.png",
-  "./p1_anim1_frames/p1_anim1_017.png",
-  "./p1_anim1_frames/p1_anim1_018.png",
-  "./p1_anim1_frames/p1_anim1_019.png",
-  "./p1_anim1_frames/p1_anim1_020.png",
-  "./p1_anim1_frames/p1_anim1_021.png",
-  "./p1_anim1_frames/p1_anim1_022.png",
-  "./p1_anim1_frames/p1_anim1_023.png",
-  "./p1_anim1_frames/p1_anim1_024.png",
-  "./p1_anim1_frames/p1_anim1_025.png",
-  "./p1_anim1_frames/p1_anim1_026.png",
-  "./p1_anim1_frames/p1_anim1_027.png",
-  "./p1_anim1_frames/p1_anim1_028.png",
-  "./p1_anim1_frames/p1_anim1_029.png",
-  "./p1_anim1_frames/p1_anim1_030.png",
-  "./p1_anim1_frames/p1_anim1_031.png"
-  "./p1_anim1_frames/p1_anim1_032.png"
-  "./p1_anim1_frames/p1_anim1_033.png"
-  "./p1_anim1_frames/p1_anim1_034.png"
-  "./p1_anim1_frames/p1_anim1_035.png"
-];
-
-    const textures = framePaths.map(path => loader.load(path));
-
-    const material = new THREE.MeshBasicMaterial({
-      map: textures[0],
-      transparent: true,
-      side: THREE.DoubleSide
-    });
-
-    const geometry = new THREE.PlaneGeometry(1, 1);
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(0, 0, 0.01);
-    mesh.scale.set(0.7, 0.7, 1);
-
-    anchor0.group.add(mesh);
-
-    let found = false;
-    let frameIndex = 0;
-    let lastFrameTime = 0;
-    const fps = 12;
-    const frameDuration = 1000 / fps;
-
-    anchor0.onTargetFound = () => {
-      found = true;
-      info.textContent = "FOUND poster 1";
-    };
-
-    anchor0.onTargetLost = () => {
-      found = false;
-      info.textContent = "LOST poster 1";
-    };
-
-    await mindarThree.start();
-
-    btn.style.display = "none";
-    info.textContent = "Running. Point at poster 1.";
-
-    renderer.setAnimationLoop((time) => {
-      if (found && time - lastFrameTime > frameDuration) {
-        frameIndex = (frameIndex + 1) % textures.length;
-        material.map = textures[frameIndex];
-        material.needsUpdate = true;
-        lastFrameTime = time;
-      }
-      renderer.render(scene, camera);
-    });
-
-  } catch (e) {
-    started = false;
-    btn.disabled = false;
-    btn.textContent = "Start Camera";
-    info.textContent =
-      "FAILED\n\n" +
-      "Name: " + (e?.name || "unknown") + "\n" +
-      "Message: " + (e?.message || String(e));
+function createFramePaths(folder,prefix,count){
+  const arr=[];
+  for(let i=0;i<count;i++){
+    const n=String(i).padStart(3,"0");
+    arr.push(`./${folder}/${prefix}_${n}.png`);
   }
+  return arr;
 }
 
-btn.addEventListener("touchend", (ev) => {
-  ev.preventDefault();
-  startAR();
-}, { passive:false });
+function createAnimation(anchor,THREE,planeGeo,framePaths,x,y,scale,fps){
 
-btn.addEventListener("click", (ev) => {
-  ev.preventDefault();
-  startAR();
+  const loader=new THREE.TextureLoader();
+  const textures=framePaths.map(p=>loader.load(p));
+
+  const material=new THREE.MeshBasicMaterial({
+    map:textures[0],
+    transparent:true,
+    side:THREE.DoubleSide
+  });
+
+  const mesh=new THREE.Mesh(planeGeo,material);
+
+  mesh.position.set(x,y,0.01);
+  mesh.scale.set(scale,scale,1);
+
+  anchor.group.add(mesh);
+
+  return {
+    textures,
+    material,
+    frameIndex:0,
+    lastFrameTime:0,
+    frameDuration:1000/fps,
+    playing:false
+  };
+}
+
+async function startAR(){
+
+if(started)return;
+started=true;
+
+btn.disabled=true;
+btn.textContent="Loading...";
+info.textContent="Loading AR libraries...";
+
+try{
+
+const mindarMod=await import("https://esm.sh/mind-ar@1.2.5/dist/mindar-image-three.prod.js?deps=three@0.150.0");
+const THREE=await import("https://esm.sh/three@0.150.0");
+
+const MindARThree=mindarMod.MindARThree;
+
+btn.textContent="Starting...";
+info.textContent="Requesting camera permission...";
+
+const mindarThree=new MindARThree({
+container,
+imageTargetSrc:"./targets.mind"
 });
+
+const {renderer,scene,camera}=mindarThree;
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x444444,1));
+
+const planeGeo=new THREE.PlaneGeometry(1,1);
+
+/* ---------- Poster 1 ---------- */
+
+const anchor0=mindarThree.addAnchor(0);
+
+const anim1=createAnimation(
+anchor0,
+THREE,
+planeGeo,
+createFramePaths("p1_anim1_frames","p1_anim1",32),
+0,0,0.7,
+12
+);
+
+/* ---------- Poster 2 ---------- */
+
+const anchor1=mindarThree.addAnchor(1);
+
+const anim2=createAnimation(
+anchor1,
+THREE,
+planeGeo,
+createFramePaths("p2_anim1_frames","p2_anim1",38),
+0,0,0.7,
+12
+);
+
+/* ---------- Poster 3 ---------- */
+
+const anchor2=mindarThree.addAnchor(2);
+
+const anim3=createAnimation(
+anchor2,
+THREE,
+planeGeo,
+createFramePaths("p3_anim1_frames","p3_anim1",36),
+0,0,0.7,
+12
+);
+
+const animations=[anim1,anim2,anim3];
+
+anchor0.onTargetFound=()=>{
+anim1.playing=true;
+info.textContent="Poster 1 detected";
+};
+
+anchor0.onTargetLost=()=>{
+anim1.playing=false;
+};
+
+anchor1.onTargetFound=()=>{
+anim2.playing=true;
+info.textContent="Poster 2 detected";
+};
+
+anchor1.onTargetLost=()=>{
+anim2.playing=false;
+};
+
+anchor2.onTargetFound=()=>{
+anim3.playing=true;
+info.textContent="Poster 3 detected";
+};
+
+anchor2.onTargetLost=()=>{
+anim3.playing=false;
+};
+
+await mindarThree.start();
+
+btn.style.display="none";
+info.textContent="Scan a poster";
+
+renderer.setAnimationLoop((time)=>{
+
+animations.forEach(anim=>{
+
+if(!anim.playing)return;
+
+if(time-anim.lastFrameTime>anim.frameDuration){
+
+anim.frameIndex=(anim.frameIndex+1)%anim.textures.length;
+
+anim.material.map=anim.textures[anim.frameIndex];
+anim.material.needsUpdate=true;
+
+anim.lastFrameTime=time;
+
+}
+
+});
+
+renderer.render(scene,camera);
+
+});
+
+}catch(e){
+
+started=false;
+btn.disabled=false;
+btn.textContent="Start Camera";
+
+info.textContent=
+"FAILED\n\n"+
+(e?.message||String(e));
+
+}
+
+}
+
+btn.addEventListener("touchend",(e)=>{
+e.preventDefault();
+startAR();
+},{passive:false});
+
+btn.addEventListener("click",(e)=>{
+e.preventDefault();
+startAR();
+});
+
 </script>
+
 </body>
 </html>

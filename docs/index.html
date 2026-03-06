@@ -185,33 +185,39 @@ createFramePaths("p3_anim1_frames","p3_anim1",36),
 12
 );
 
-const animations=[anim1,anim2,anim3];
-
-anchor0.onTargetFound=()=>{
-anim1.playing=true;
-info.textContent="Poster 1 detected";
-};
-
-anchor0.onTargetLost=()=>{
-anim1.playing=false;
-};
-
-anchor1.onTargetFound=()=>{
-anim2.playing=true;
-info.textContent="Poster 2 detected";
-};
-
-anchor1.onTargetLost=()=>{
-anim2.playing=false;
-};
-
 anchor2.onTargetFound=()=>{
-anim3.playing=true;
-info.textContent="Poster 3 detected";
+  anim3.playing=true;
+  info.textContent="Anchor 2 detected";
 };
 
 anchor2.onTargetLost=()=>{
-anim3.playing=false;
+  anim3.playing=false;
+};
+
+const animations=[anim1,anim2,anim3];
+
+anchor0.onTargetFound=()=>{
+  anim1.playing=true;
+  info.textContent="Anchor 0 detected";
+};
+anchor0.onTargetLost=()=>{
+  anim1.playing=false;
+};
+
+anchor1.onTargetFound=()=>{
+  anim2.playing=true;
+  info.textContent="Anchor 1 detected";
+};
+anchor1.onTargetLost=()=>{
+  anim2.playing=false;
+};
+
+anchor2.onTargetFound=()=>{
+  anim3.playing=true;
+  info.textContent="Anchor 2 detected";
+};
+anchor2.onTargetLost=()=>{
+  anim3.playing=false;
 };
 
 await mindarThree.start();

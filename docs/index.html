@@ -3,69 +3,76 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Tap Debug</title>
+<title>Poster AR</title>
+
 <style>
 html, body {
   margin: 0;
+  padding: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
   background: #000;
 }
 
-/* Make sure canvases/videos cannot steal taps */
-canvas, video {
-  pointer-events: none !important;
-}
-
-/* Full screen background layer */
+/* If you want a background layer, it MUST NOT steal taps */
 #bg {
   position: fixed;
   inset: 0;
   z-index: 0;
   background: #000;
-  pointer-events: none; /* ADD THIS */
+  pointer-events: none; /* CRITICAL */
 }
 
-/* Very visible button */
+/* AR container behind everything and never steals taps */
+#ar-container {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none; /* CRITICAL */
+}
+
+/* Extra safety: canvases/videos never steal taps */
+canvas, video {
+  pointer-events: none !important;
+}
+
+/* Start button: very top layer, easy to tap */
 #startButton {
   position: fixed;
   left: 12px;
   right: 12px;
-  top: 120px;
-  bottom: auto;
+  top: 12px;
   z-index: 2147483647;
-  font-size: 22px;
-  padding: 22px 16px;
+  font-size: 20px;
+  padding: 16px 14px;
   border: 0;
-  border-radius: 14px;
-  background: #ffd400;
-  color: #000;
-  pointer-events: auto !important;
+  border-radius: 12px;
+  pointer-events: auto;
   touch-action: manipulation;
 }
 
-/* Status bar */
+/* Status text */
 #info {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 90px;
-  padding: 10px 12px;
+  bottom: 0;
+  padding: 12px 14px;
   color: #fff;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0,0,0,0.65);
+  text-align: center;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  font-size: 13px;
-  z-index: 2147483647;
+  font-size: 14px;
+  z-index: 2147483646;
   pointer-events: none;
-  white-space: pre-wrap;
 }
 
-/* Label */
+/* Small label to confirm correct file */
 #ver {
   position: fixed;
-  top: 8px;
-  right: 8px;
+  right: 12px;
+  top: 12px;
   padding: 6px 8px;
   background: rgba(255,255,0,0.9);
   color: #000;
@@ -75,50 +82,155 @@ canvas, video {
   pointer-events: none;
 }
 </style>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "./three.module.js",
+    "mindar-image-three": "./mindar-image-three.prod.js"
+  }
+}
+</script>
 </head>
 
 <body>
-  <div id="bg"></div>
-  <div id="ver">DOCS v7 TAP DEBUG</div>
-  <div id="info">Tap the yellow button.
-If taps are blocked, I will show the element at your tap position.</div>
-  <button id="startButton" type="button">TAP ME</button>
+<div id="bg"></div>
+<div id="ar-container"></div>
 
-<script>
+<div id="ver">AR DOCS v9</div>
+<button id="startButton" type="button">Start camera</button>
+<div id="info">Tap Start camera, allow Camera, then point at a poster.</div>
+
+<script type="module">
+import * as THREE from "three";
+import { MindARThree } from "mindar-image-three";
+
+const arContainer = document.getElementById("ar-container");
+const startButton = document.getElementById("startButton");
 const info = document.getElementById("info");
-const btn = document.getElementById("startButton");
 
-function describeEl(el) {
-  if (!el) return "null";
-  const id = el.id ? ("#" + el.id) : "";
-  const cls = el.className ? ("." + String(el.className).split(" ").join(".")) : "";
-  return el.tagName.toLowerCase() + id + cls;
+const PLACEMENTS = {
+  0: [
+    { x: -0.30, y:  0.25, scale: 0.55, file: "p1_anim1.webm" },
+    { x:  0.30, y:  0.20, scale: 0.55, file: "p1_anim2.webm" },
+    { x:  0.00, y: -0.30, scale: 0.70, file: "p1_anim3.webm" },
+  ],
+  1: [
+    { x: -0.30, y:  0.25, scale: 0.55, file: "p2_anim1.webm" },
+    { x:  0.30, y:  0.20, scale: 0.55, file: "p2_anim2.webm" },
+    { x:  0.00, y: -0.30, scale: 0.70, file: "p2_anim3.webm" },
+  ],
+  2: [
+    { x: -0.30, y:  0.25, scale: 0.55, file: "p3_anim1.webm" },
+    { x:  0.30, y:  0.20, scale: 0.55, file: "p3_anim2.webm" },
+    { x:  0.00, y: -0.30, scale: 0.70, file: "p3_anim3.webm" },
+  ],
+};
+
+function makeVideo(src) {
+  const v = document.createElement("video");
+  v.src = src;
+  v.loop = true;
+  v.muted = true;
+  v.preload = "auto";
+  v.playsInline = true;
+  v.setAttribute("playsinline", "");
+  v.setAttribute("webkit-playsinline", "");
+  v.setAttribute("muted", "");
+  return v;
 }
 
-function logPoint(x, y, label) {
-  const el = document.elementFromPoint(x, y);
-  info.textContent =
-    label + "\n" +
-    "elementFromPoint: " + describeEl(el) + "\n" +
-    "x,y: " + Math.round(x) + "," + Math.round(y);
+let started = false;
+
+async function startAR() {
+  if (started) return;
+  started = true;
+
+  startButton.disabled = true;
+  startButton.textContent = "Starting...";
+  info.textContent = "Requesting camera permission...";
+
+  const mindarThree = new MindARThree({
+    container: arContainer,
+    imageTargetSrc: "./targets.mind",
+  });
+
+  const { renderer, scene, camera } = mindarThree;
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
+
+  const plane = new THREE.PlaneGeometry(1, 1);
+  const anchors = [
+    mindarThree.addAnchor(0),
+    mindarThree.addAnchor(1),
+    mindarThree.addAnchor(2),
+  ];
+
+  const videosByTarget = { 0: [], 1: [], 2: [] };
+
+  for (const targetIndex of [0, 1, 2]) {
+    const anchor = anchors[targetIndex];
+
+    for (const item of PLACEMENTS[targetIndex]) {
+      const video = makeVideo(item.file);
+      videosByTarget[targetIndex].push(video);
+
+      const texture = new THREE.VideoTexture(video);
+      texture.generateMipmaps = false;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        side: THREE.DoubleSide,
+      });
+
+      const mesh = new THREE.Mesh(plane, material);
+      mesh.position.set(item.x, item.y, 0.01);
+      mesh.scale.set(item.scale, item.scale, 1);
+
+      anchor.group.add(mesh);
+    }
+
+    anchor.onTargetFound = () => {
+      info.textContent = `Poster ${targetIndex + 1} detected`;
+      for (const v of videosByTarget[targetIndex]) v.play().catch(() => {});
+    };
+
+    anchor.onTargetLost = () => {
+      info.textContent = "Point at a poster";
+      for (const v of videosByTarget[targetIndex]) v.pause();
+    };
+  }
+
+  try {
+    await mindarThree.start(); // Safari should ask for camera permission here
+  } catch (e) {
+    started = false;
+    startButton.disabled = false;
+    startButton.textContent = "Start camera";
+    info.textContent = "Camera blocked. iPhone Settings > Safari > Camera > Allow.";
+    return;
+  }
+
+  startButton.style.display = "none";
+  info.textContent = "Camera started. Point at a poster.";
+
+  renderer.setAnimationLoop(() => renderer.render(scene, camera));
 }
 
-document.addEventListener("touchstart", (e) => {
-  const t = e.touches[0];
-  logPoint(t.clientX, t.clientY, "touchstart on document");
-}, { passive: true });
+/* iPhone Safari: both touch and click */
+startButton.addEventListener("touchstart", (ev) => {
+  ev.preventDefault();
+  startAR();
+}, { passive: false });
 
-document.addEventListener("click", (e) => {
-  logPoint(e.clientX, e.clientY, "click on document");
-}, true);
-
-btn.addEventListener("touchstart", (e) => {
-  info.textContent = "BUTTON touchstart received. The button is tappable.";
-}, { passive: true });
-
-btn.addEventListener("click", (e) => {
-  info.textContent = "BUTTON click received. The button is tappable.";
+startButton.addEventListener("click", (ev) => {
+  ev.preventDefault();
+  startAR();
 });
 </script>
+
 </body>
 </html>

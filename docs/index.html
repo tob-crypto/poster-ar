@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Poster AR</title>
+<title>Poster AR PNG Sequence</title>
 
 <style>
 html, body {
@@ -67,7 +67,7 @@ canvas, video {
 
 <body>
   <div id="container"></div>
-  <div id="ver">WEBP 02</div>
+  <div id="ver">PNG SEQ 01</div>
   <div id="info">Tap Start Camera.</div>
   <button id="btn" type="button">Start Camera</button>
 
@@ -101,66 +101,68 @@ async function startAR() {
     const { renderer, scene, camera } = mindarThree;
     scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
 
-    const planeGeo = new THREE.PlaneGeometry(1, 1);
-
-    function addImageToAnchor(anchor, file, x, y, scale) {
-      const texture = new THREE.TextureLoader().load(file);
-
-      const material = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        side: THREE.DoubleSide
-      });
-
-      const mesh = new THREE.Mesh(planeGeo, material);
-      mesh.position.set(x, y, 0.01);
-      mesh.scale.set(scale, scale, 1);
-
-      anchor.group.add(mesh);
-    }
-
-    // Poster 1 = target index 0
     const anchor0 = mindarThree.addAnchor(0);
-    addImageToAnchor(anchor0, "p1_anim1.webp", 0, 0, 0.7);
+
+    const loader = new THREE.TextureLoader();
+
+    const framePaths = [
+      "./p1_anim1_frames/p1_anim1_0001.png",
+      "./p1_anim1_frames/p1_anim1_0002.png",
+      "./p1_anim1_frames/p1_anim1_0003.png",
+      "./p1_anim1_frames/p1_anim1_0004.png",
+      "./p1_anim1_frames/p1_anim1_0005.png",
+      "./p1_anim1_frames/p1_anim1_0006.png",
+      "./p1_anim1_frames/p1_anim1_0007.png",
+      "./p1_anim1_frames/p1_anim1_0008.png",
+      "./p1_anim1_frames/p1_anim1_0009.png",
+      "./p1_anim1_frames/p1_anim1_0010.png",
+      "./p1_anim1_frames/p1_anim1_0011.png",
+      "./p1_anim1_frames/p1_anim1_0012.png"
+    ];
+
+    const textures = framePaths.map(path => loader.load(path));
+
+    const material = new THREE.MeshBasicMaterial({
+      map: textures[0],
+      transparent: true,
+      side: THREE.DoubleSide
+    });
+
+    const geometry = new THREE.PlaneGeometry(1, 1);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(0, 0, 0.01);
+    mesh.scale.set(0.7, 0.7, 1);
+
+    anchor0.group.add(mesh);
+
+    let found = false;
+    let frameIndex = 0;
+    let lastFrameTime = 0;
+    const fps = 12;
+    const frameDuration = 1000 / fps;
 
     anchor0.onTargetFound = () => {
+      found = true;
       info.textContent = "FOUND poster 1";
     };
 
     anchor0.onTargetLost = () => {
+      found = false;
       info.textContent = "LOST poster 1";
-    };
-
-    // Poster 2 = target index 1
-    const anchor1 = mindarThree.addAnchor(1);
-    addImageToAnchor(anchor1, "p2_anim1.webp", 0, 0, 0.7);
-
-    anchor1.onTargetFound = () => {
-      info.textContent = "FOUND poster 2";
-    };
-
-    anchor1.onTargetLost = () => {
-      info.textContent = "LOST poster 2";
-    };
-
-    // Poster 3 = target index 2
-    const anchor2 = mindarThree.addAnchor(2);
-    addImageToAnchor(anchor2, "p3_anim1.webp", 0, 0, 0.7);
-
-    anchor2.onTargetFound = () => {
-      info.textContent = "FOUND poster 3";
-    };
-
-    anchor2.onTargetLost = () => {
-      info.textContent = "LOST poster 3";
     };
 
     await mindarThree.start();
 
     btn.style.display = "none";
-    info.textContent = "Running. Point at a poster.";
+    info.textContent = "Running. Point at poster 1.";
 
-    renderer.setAnimationLoop(() => {
+    renderer.setAnimationLoop((time) => {
+      if (found && time - lastFrameTime > frameDuration) {
+        frameIndex = (frameIndex + 1) % textures.length;
+        material.map = textures[frameIndex];
+        material.needsUpdate = true;
+        lastFrameTime = time;
+      }
       renderer.render(scene, camera);
     });
 

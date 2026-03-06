@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
+<script type="importmap">
+{
+  "imports": {
+    "three": "./three.module.js",
+    "mindar-image-three": "./mindar-image-three.prod.js"
+  }
+}
+</script>
+  
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Poster AR</title>
@@ -131,10 +140,10 @@ async function startAR() {
   // Load libraries only after the user taps
   let THREE, MindARThree;
   try {
-    const threeMod = await import("./three.module.js");
+    const threeMod = await import("three");
     THREE = threeMod;
 
-    const mindarMod = await import("./mindar-image-three.prod.js");
+    const mindarMod = await import("mindar-image-three");
     MindARThree = mindarMod.MindARThree;
   } catch (e) {
     started = false;

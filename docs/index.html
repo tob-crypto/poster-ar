@@ -71,7 +71,6 @@ function makeVideo(file) {
   v.setAttribute("playsinline", "");
   v.setAttribute("webkit-playsinline", "");
   v.setAttribute("muted", "");
-  v.style.pointerEvents = "none";
   return v;
 }
 
@@ -114,12 +113,10 @@ async function startAR() {
       texture.minFilter = THREE.LinearFilter;
       texture.magFilter = THREE.LinearFilter;
 
-const mat = new THREE.MeshBasicMaterial({
-  map: texture,
-  transparent: true,
-  side: THREE.DoubleSide,
-  alphaTest: 0.05
-});
+      const mat = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        side: THREE.DoubleSide
       });
 
       const mesh = new THREE.Mesh(planeGeo, mat);

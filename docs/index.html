@@ -3,77 +3,83 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MindAR Camera</title>
+<title>AR Start</title>
 
 <style>
 html, body { margin:0; width:100%; height:100%; overflow:hidden; background:#000; }
-#container { position:fixed; inset:0; }
+#container { position:fixed; inset:0; z-index:0; }
 #btn {
   position:fixed; left:12px; right:12px; bottom:16px;
-  z-index:999999; font-size:20px; padding:18px 16px; border:0; border-radius:12px;
+  z-index:2147483647; font-size:20px; padding:18px 16px; border:0; border-radius:12px;
+  touch-action: manipulation;
 }
 #info {
-  position:fixed; left:0; right:0; bottom:76px;
-  padding:10px 12px; color:#fff; background:rgba(0,0,0,0.65);
+  position:fixed; left:0; right:0; bottom:76px; padding:10px 12px;
+  color:#fff; background:rgba(0,0,0,0.65);
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  z-index:999998; white-space:pre-wrap;
+  z-index:2147483646; white-space:pre-wrap;
+}
+#ver {
+  position:fixed; top:10px; right:10px; padding:6px 8px;
+  background:rgba(255,255,0,0.9); color:#000; font-family:sans-serif; font-size:12px;
+  z-index:2147483647;
 }
 </style>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-    "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
-  }
-}
-</script>
 </head>
 
 <body>
   <div id="container"></div>
-  <div id="info">Tap Start. Safari should ask for Camera permission.</div>
+  <div id="ver">DOCS v11</div>
+  <div id="info">Tap Start Camera.</div>
   <button id="btn" type="button">Start Camera</button>
 
-<script type="module">
-import { MindARThree } from "mindar-image-three";
-
+<script>
 const btn = document.getElementById("btn");
 const info = document.getElementById("info");
 const container = document.getElementById("container");
 
 let started = false;
 
-async function start() {
+async function startAR() {
   if (started) return;
   started = true;
 
   btn.disabled = true;
-  btn.textContent = "Starting...";
-  info.textContent = "Requesting camera permission...";
-
-  const mindarThree = new MindARThree({
-    container,
-    imageTargetSrc: "./targets.mind"
-  });
+  btn.textContent = "Loading...";
+  info.textContent = "Loading AR libraries...";
 
   try {
-    await mindarThree.start();
+    // esm.sh rewrites/bundles dependencies so MindAR's internal imports resolve on Safari
+    const mod = await import("https://esm.sh/mind-ar@1.2.5/dist/mindar-image-three.prod.js");
+    const MindARThree = mod.MindARThree;
+
+    btn.textContent = "Starting...";
+    info.textContent = "Requesting camera permission...";
+
+    const mindarThree = new MindARThree({
+      container,
+      imageTargetSrc: "./targets.mind"
+    });
+
+    await mindarThree.start(); // camera permission prompt happens here
+
     btn.style.display = "none";
-    info.textContent = "Camera started. Point at target image.";
+    info.textContent = "Camera started. Point at your poster target.";
+
   } catch (e) {
     started = false;
     btn.disabled = false;
     btn.textContent = "Start Camera";
     info.textContent =
-      "MindAR start FAILED.\n\n" +
-      "Name: " + (e?.name || "unknown") + "\n" +
-      "Message: " + (e?.message || String(e));
+      "FAILED\n\n" +
+      "Name: " + (e && e.name ? e.name : "unknown") + "\n" +
+      "Message: " + (e && e.message ? e.message : String(e));
   }
 }
 
-btn.addEventListener("touchend", (ev) => { ev.preventDefault(); start(); }, { passive:false });
-btn.addEventListener("click", (ev) => { ev.preventDefault(); start(); });
+// Ensure tap works even if something weird happens with click
+btn.addEventListener("touchend", (ev) => { ev.preventDefault(); startAR(); }, { passive:false });
+btn.addEventListener("click", (ev) => { ev.preventDefault(); startAR(); });
 </script>
 </body>
 </html>

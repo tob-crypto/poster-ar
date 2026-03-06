@@ -15,36 +15,29 @@ html, body {
   background:#000;
 }
 
-/* AR container is always behind */
+/* AR renders here, always behind */
 #ar-container {
   position: fixed;
   inset: 0;
   z-index: 0;
-  pointer-events: none; /* IMPORTANT: stop it from stealing taps */
+  pointer-events: none;
 }
 
-/* UI overlay is always on top */
-#ui {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  pointer-events: none; /* overlay ignores taps */
-}
-
+/* Big safe tap target pinned to the top */
 #startButton {
-  pointer-events: auto;
-  z-index: 100000;
+  position: fixed;
+  left: 12px;
+  top: 12px;
+  z-index: 2147483647; /* max-ish */
   font-size: 18px;
-  padding: 16px 22px;
+  padding: 14px 18px;
   border: 0;
   border-radius: 10px;
+  pointer-events: auto;
   touch-action: manipulation;
 }
 
+/* Status text at bottom */
 #info {
   position: fixed;
   left: 0;
@@ -52,25 +45,25 @@ html, body {
   bottom: 0;
   padding: 12px 14px;
   color: #fff;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0,0,0,0.6);
   text-align: center;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   font-size: 14px;
-  z-index: 100000;
+  z-index: 2147483646;
   pointer-events: none;
 }
 
-/* small visible version label so you know the right file is loaded */
+/* Version label */
 #ver {
   position: fixed;
-  top: 8px;
-  left: 8px;
+  right: 12px;
+  top: 12px;
   padding: 6px 8px;
   background: rgba(255,255,0,0.9);
   color: #000;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   font-size: 12px;
-  z-index: 100000;
+  z-index: 2147483647;
   pointer-events: none;
 }
 </style>
@@ -85,30 +78,18 @@ html, body {
 </script>
 </head>
 
-  <script>
-  const b = document.getElementById("startButton");
-  b.addEventListener("touchstart", () => {}, { passive: true });
-</script>
-  
 <body>
-<div id="ver">AR VERSION v5</div>
-<div style="position:fixed;top:40px;left:8px;z-index:999999;background:yellow;color:black;padding:6px;font-family:sans-serif">
-DOCS VERSION
-</div>
 <div id="ar-container"></div>
 
-<div id="ui">
-  <button id="startButton">Tap to Start AR</button>
-</div>
-
-<div id="info">Open in Safari. Tap Start. Allow Camera. Then point at a poster.</div>
+<button id="startButton">Start camera</button>
+<div id="ver">DOCS v5</div>
+<div id="info">Tap Start camera. Allow Camera. Then point at a poster.</div>
 
 <script type="module">
 import * as THREE from "three";
 import { MindARThree } from "mindar-image-three";
 
 const arContainer = document.getElementById("ar-container");
-const ui = document.getElementById("ui");
 const startButton = document.getElementById("startButton");
 const info = document.getElementById("info");
 
@@ -143,9 +124,15 @@ function makeVideo(src) {
   return v;
 }
 
-startButton.addEventListener("click", async () => {
+let started = false;
+
+async function startAR() {
+  if (started) return;
+  started = true;
+
   startButton.disabled = true;
   startButton.textContent = "Starting...";
+  info.textContent = "Requesting camera permission...";
 
   const mindarThree = new MindARThree({
     container: arContainer,
@@ -154,22 +141,19 @@ startButton.addEventListener("click", async () => {
 
   const { renderer, scene, camera } = mindarThree;
 
-  // MindAR will append a canvas inside arContainer.
-  // We force that canvas to ignore pointer events too.
-  const stopCanvasStealingTaps = () => {
+  // Ensure any canvas MindAR adds cannot steal taps
+  const stopCanvasTaps = () => {
     const c = arContainer.querySelector("canvas");
     if (c) c.style.pointerEvents = "none";
   };
-  // run a few times because canvas may appear slightly later
-  stopCanvasStealingTaps();
-  setTimeout(stopCanvasStealingTaps, 50);
-  setTimeout(stopCanvasStealingTaps, 200);
-  setTimeout(stopCanvasStealingTaps, 600);
+  stopCanvasTaps();
+  setTimeout(stopCanvasTaps, 50);
+  setTimeout(stopCanvasTaps, 200);
+  setTimeout(stopCanvasTaps, 600);
 
   scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
 
   const plane = new THREE.PlaneGeometry(1, 1);
-
   const anchors = [
     mindarThree.addAnchor(0),
     mindarThree.addAnchor(1),
@@ -214,16 +198,31 @@ startButton.addEventListener("click", async () => {
   }
 
   try {
-    await mindarThree.start(); // camera permission should appear here
+    await mindarThree.start();
   } catch (e) {
+    started = false;
     startButton.disabled = false;
-    startButton.textContent = "Tap to Start AR";
+    startButton.textContent = "Start camera";
     info.textContent = "Camera blocked. iPhone Settings > Safari > Camera > Allow.";
     return;
   }
 
-  ui.style.display = "none";
+  // Hide button once camera starts
+  startButton.style.display = "none";
+  info.textContent = "Camera started. Point at a poster.";
+
   renderer.setAnimationLoop(() => renderer.render(scene, camera));
+}
+
+/* iPhone-friendly tap handling */
+startButton.addEventListener("touchstart", (ev) => {
+  ev.preventDefault();
+  startAR();
+}, { passive: false });
+
+startButton.addEventListener("click", (ev) => {
+  ev.preventDefault();
+  startAR();
 });
 </script>
 

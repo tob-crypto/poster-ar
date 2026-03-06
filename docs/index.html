@@ -3,33 +3,24 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AR Start</title>
+<title>MindAR Test</title>
 
 <style>
 html, body { margin:0; width:100%; height:100%; overflow:hidden; background:#000; }
 #container { position:fixed; inset:0; z-index:0; }
-#btn {
-  position:fixed; left:12px; right:12px; bottom:16px;
-  z-index:2147483647; font-size:20px; padding:18px 16px; border:0; border-radius:12px;
-  touch-action: manipulation;
-}
-#info {
-  position:fixed; left:0; right:0; bottom:76px; padding:10px 12px;
-  color:#fff; background:rgba(0,0,0,0.65);
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  z-index:2147483646; white-space:pre-wrap;
-}
-#ver {
-  position:fixed; top:10px; right:10px; padding:6px 8px;
-  background:rgba(255,255,0,0.9); color:#000; font-family:sans-serif; font-size:12px;
-  z-index:2147483647;
-}
+#btn { position:fixed; left:12px; right:12px; bottom:16px; z-index:2147483647;
+  font-size:20px; padding:18px 16px; border:0; border-radius:12px; touch-action: manipulation; }
+#info { position:fixed; left:0; right:0; bottom:76px; padding:10px 12px; color:#fff;
+  background:rgba(0,0,0,0.65); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  z-index:2147483646; white-space:pre-wrap; }
+#ver { position:fixed; top:10px; right:10px; padding:6px 8px; background:rgba(255,255,0,0.9);
+  color:#000; font-family:sans-serif; font-size:12px; z-index:2147483647; }
 </style>
 </head>
 
 <body>
   <div id="container"></div>
-  <div id="ver">DOCS v11</div>
+  <div id="ver">DOCS v12 TARGET TEST</div>
   <div id="info">Tap Start Camera.</div>
   <button id="btn" type="button">Start Camera</button>
 
@@ -37,7 +28,6 @@ html, body { margin:0; width:100%; height:100%; overflow:hidden; background:#000
 const btn = document.getElementById("btn");
 const info = document.getElementById("info");
 const container = document.getElementById("container");
-
 let started = false;
 
 async function startAR() {
@@ -46,65 +36,51 @@ async function startAR() {
 
   btn.disabled = true;
   btn.textContent = "Loading...";
-  info.textContent = "Loading AR libraries...";
+  info.textContent = "Loading MindAR...";
 
-try {
-  const mindarThree = new MindARThree({
-    container,
-    imageTargetSrc: "./targets.mind"
-  });
+  try {
+    const mindarMod = await import("https://esm.sh/mind-ar@1.2.5/dist/mindar-image-three.prod.js?deps=three@0.150.0");
+    const THREE = await import("https://esm.sh/three@0.150.0");
+    const MindARThree = mindarMod.MindARThree;
 
-  const { renderer, scene, camera } = mindarThree;
+    btn.textContent = "Starting...";
+    info.textContent = "Requesting camera permission...";
 
-  // Simple light so we can see objects
-  const THREE = (await import("https://esm.sh/three@0.150.0")).default || (await import("https://esm.sh/three@0.150.0"));
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
+    const mindarThree = new MindARThree({
+      container,
+      imageTargetSrc: "./targets.mind"
+    });
 
-  // Create a bright rectangle so it's obvious when tracking works
-  const geometry = new THREE.PlaneGeometry(1, 0.5);
-  const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.set(0, 0, 0.01);
+    const { renderer, scene, camera } = mindarThree;
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
 
-  const anchor0 = mindarThree.addAnchor(0);
-  anchor0.group.add(mesh);
+    // BIG obvious green rectangle
+    const geo = new THREE.PlaneGeometry(1.2, 0.7);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const box = new THREE.Mesh(geo, mat);
+    box.position.set(0, 0, 0.01);
 
-  anchor0.onTargetFound = () => { info.textContent = "FOUND target 1"; };
-  anchor0.onTargetLost  = () => { info.textContent = "LOST target 1";  };
+    const anchor0 = mindarThree.addAnchor(0);
+    anchor0.group.add(box);
 
-  await mindarThree.start();
+    anchor0.onTargetFound = () => { info.textContent = "FOUND target index 0 (poster 1)"; };
+    anchor0.onTargetLost  = () => { info.textContent = "LOST target index 0"; };
 
-  btn.style.display = "none";
-  info.textContent = "Running. Point at poster.";
-
-  renderer.setAnimationLoop(() => renderer.render(scene, camera));
-} catch (e) {
-  started = false;
-  btn.disabled = false;
-  btn.textContent = "Start Camera";
-  info.textContent =
-    "FAILED\n\n" +
-    "Name: " + (e && e.name ? e.name : "unknown") + "\n" +
-    "Message: " + (e && e.message ? e.message : String(e));
-}
-
-    await mindarThree.start(); // camera permission prompt happens here
+    await mindarThree.start();
 
     btn.style.display = "none";
-    info.textContent = "Camera started. Point at your poster target.";
+    info.textContent = "Running. Point at poster 1.";
+
+    renderer.setAnimationLoop(() => renderer.render(scene, camera));
 
   } catch (e) {
     started = false;
     btn.disabled = false;
     btn.textContent = "Start Camera";
-    info.textContent =
-      "FAILED\n\n" +
-      "Name: " + (e && e.name ? e.name : "unknown") + "\n" +
-      "Message: " + (e && e.message ? e.message : String(e));
+    info.textContent = "FAILED\n\n" + (e?.message || String(e));
   }
 }
 
-// Ensure tap works even if something weird happens with click
 btn.addEventListener("touchend", (ev) => { ev.preventDefault(); startAR(); }, { passive:false });
 btn.addEventListener("click", (ev) => { ev.preventDefault(); startAR(); });
 </script>

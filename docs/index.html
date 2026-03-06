@@ -1,21 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Poster AR</title>
 
 <style>
 html, body {
-  margin:0;
-  padding:0;
-  width:100%;
-  height:100%;
-  overflow:hidden;
-  background:#000;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
 }
 
-/* AR renders here, always behind */
+/* IMPORTANT: do NOT have any rule like "body * { pointer-events: none !important; }" anywhere. */
+
+/* AR container behind everything */
 #ar-container {
   position: fixed;
   inset: 0;
@@ -23,29 +25,30 @@ html, body {
   pointer-events: none;
 }
 
-/* Big safe tap target pinned to the top */
+/* Start button is the absolute top layer */
 #startButton {
   position: fixed;
   left: 12px;
-  top: 12px;
-  z-index: 2147483647; /* max-ish */
-  font-size: 18px;
-  padding: 14px 18px;
+  right: 12px;
+  bottom: 16px;
+  z-index: 2147483647;
+  font-size: 20px;
+  padding: 18px 16px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 12px;
   pointer-events: auto;
   touch-action: manipulation;
 }
 
-/* Status text at bottom */
+/* Status */
 #info {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
-  padding: 12px 14px;
+  bottom: 72px;
+  padding: 10px 12px;
   color: #fff;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.55);
   text-align: center;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   font-size: 14px;
@@ -53,11 +56,11 @@ html, body {
   pointer-events: none;
 }
 
-/* Version label */
+/* Label */
 #ver {
   position: fixed;
-  right: 12px;
-  top: 12px;
+  top: 8px;
+  right: 8px;
   padding: 6px 8px;
   background: rgba(255,255,0,0.9);
   color: #000;
@@ -79,152 +82,140 @@ html, body {
 </head>
 
 <body>
-<div id="ar-container"></div>
+  <div id="ar-container"></div>
 
-<button id="startButton">Start camera</button>
-<div id="ver">DOCS v5</div>
-<div id="info">Tap Start camera. Allow Camera. Then point at a poster.</div>
+  <div id="ver">DOCS v6</div>
+  <div id="info">Tap Start. If you do not see a popup, the button is still being covered.</div>
+  <button id="startButton" type="button">Start camera</button>
 
-<script type="module">
-import * as THREE from "three";
-import { MindARThree } from "mindar-image-three";
+  <script type="module">
+    import * as THREE from "three";
+    import { MindARThree } from "mindar-image-three";
 
-const arContainer = document.getElementById("ar-container");
-const startButton = document.getElementById("startButton");
-const info = document.getElementById("info");
+    const arContainer = document.getElementById("ar-container");
+    const startButton = document.getElementById("startButton");
+    const info = document.getElementById("info");
 
-const PLACEMENTS = {
-  0: [
-    { x: -0.30, y:  0.25, scale: 0.55, file: "p1_anim1.webm" },
-    { x:  0.30, y:  0.20, scale: 0.55, file: "p1_anim2.webm" },
-    { x:  0.00, y: -0.30, scale: 0.70, file: "p1_anim3.webm" },
-  ],
-  1: [
-    { x: -0.30, y:  0.25, scale: 0.55, file: "p2_anim1.webm" },
-    { x:  0.30, y:  0.20, scale: 0.55, file: "p2_anim2.webm" },
-    { x:  0.00, y: -0.30, scale: 0.70, file: "p2_anim3.webm" },
-  ],
-  2: [
-    { x: -0.30, y:  0.25, scale: 0.55, file: "p3_anim1.webm" },
-    { x:  0.30, y:  0.20, scale: 0.55, file: "p3_anim2.webm" },
-    { x:  0.00, y: -0.30, scale: 0.70, file: "p3_anim3.webm" },
-  ],
-};
+    const PLACEMENTS = {
+      0: [
+        { x: -0.30, y:  0.25, scale: 0.55, file: "p1_anim1.webm" },
+        { x:  0.30, y:  0.20, scale: 0.55, file: "p1_anim2.webm" },
+        { x:  0.00, y: -0.30, scale: 0.70, file: "p1_anim3.webm" },
+      ],
+      1: [
+        { x: -0.30, y:  0.25, scale: 0.55, file: "p2_anim1.webm" },
+        { x:  0.30, y:  0.20, scale: 0.55, file: "p2_anim2.webm" },
+        { x:  0.00, y: -0.30, scale: 0.70, file: "p2_anim3.webm" },
+      ],
+      2: [
+        { x: -0.30, y:  0.25, scale: 0.55, file: "p3_anim1.webm" },
+        { x:  0.30, y:  0.20, scale: 0.55, file: "p3_anim2.webm" },
+        { x:  0.00, y: -0.30, scale: 0.70, file: "p3_anim3.webm" },
+      ],
+    };
 
-function makeVideo(src) {
-  const v = document.createElement("video");
-  v.src = src;
-  v.loop = true;
-  v.muted = true;
-  v.preload = "auto";
-  v.playsInline = true;
-  v.setAttribute("playsinline", "");
-  v.setAttribute("webkit-playsinline", "");
-  v.setAttribute("muted", "");
-  return v;
-}
-
-let started = false;
-
-async function startAR() {
-  if (started) return;
-  started = true;
-
-  startButton.disabled = true;
-  startButton.textContent = "Starting...";
-  info.textContent = "Requesting camera permission...";
-
-  const mindarThree = new MindARThree({
-    container: arContainer,
-    imageTargetSrc: "./targets.mind",
-  });
-
-  const { renderer, scene, camera } = mindarThree;
-
-  // Ensure any canvas MindAR adds cannot steal taps
-  const stopCanvasTaps = () => {
-    const c = arContainer.querySelector("canvas");
-    if (c) c.style.pointerEvents = "none";
-  };
-  stopCanvasTaps();
-  setTimeout(stopCanvasTaps, 50);
-  setTimeout(stopCanvasTaps, 200);
-  setTimeout(stopCanvasTaps, 600);
-
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
-
-  const plane = new THREE.PlaneGeometry(1, 1);
-  const anchors = [
-    mindarThree.addAnchor(0),
-    mindarThree.addAnchor(1),
-    mindarThree.addAnchor(2),
-  ];
-
-  const videosByTarget = { 0: [], 1: [], 2: [] };
-
-  for (const targetIndex of [0, 1, 2]) {
-    const anchor = anchors[targetIndex];
-
-    for (const item of PLACEMENTS[targetIndex]) {
-      const video = makeVideo(item.file);
-      videosByTarget[targetIndex].push(video);
-
-      const texture = new THREE.VideoTexture(video);
-      texture.generateMipmaps = false;
-      texture.minFilter = THREE.LinearFilter;
-      texture.magFilter = THREE.LinearFilter;
-
-      const material = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        side: THREE.DoubleSide,
-      });
-
-      const mesh = new THREE.Mesh(plane, material);
-      mesh.position.set(item.x, item.y, 0.01);
-      mesh.scale.set(item.scale, item.scale, 1);
-      anchor.group.add(mesh);
+    function makeVideo(src) {
+      const v = document.createElement("video");
+      v.src = src;
+      v.loop = true;
+      v.muted = true;
+      v.preload = "auto";
+      v.playsInline = true;
+      v.setAttribute("playsinline", "");
+      v.setAttribute("webkit-playsinline", "");
+      v.setAttribute("muted", "");
+      return v;
     }
 
-    anchor.onTargetFound = () => {
-      info.textContent = `Poster ${targetIndex + 1} detected`;
-      for (const v of videosByTarget[targetIndex]) v.play().catch(() => {});
-    };
+    let started = false;
 
-    anchor.onTargetLost = () => {
-      info.textContent = "Point at a poster";
-      for (const v of videosByTarget[targetIndex]) v.pause();
-    };
-  }
+    async function startAR() {
+      if (started) return;
+      started = true;
 
-  try {
-    await mindarThree.start();
-  } catch (e) {
-    started = false;
-    startButton.disabled = false;
-    startButton.textContent = "Start camera";
-    info.textContent = "Camera blocked. iPhone Settings > Safari > Camera > Allow.";
-    return;
-  }
+      info.textContent = "Requesting camera permission...";
+      startButton.disabled = true;
+      startButton.textContent = "Starting...";
 
-  // Hide button once camera starts
-  startButton.style.display = "none";
-  info.textContent = "Camera started. Point at a poster.";
+      const mindarThree = new MindARThree({
+        container: arContainer,
+        imageTargetSrc: "./targets.mind",
+      });
 
-  renderer.setAnimationLoop(() => renderer.render(scene, camera));
-}
+      const { renderer, scene, camera } = mindarThree;
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
 
-/* iPhone-friendly tap handling */
-startButton.addEventListener("touchstart", (ev) => {
-  ev.preventDefault();
-  startAR();
-}, { passive: false });
+      const plane = new THREE.PlaneGeometry(1, 1);
+      const anchors = [
+        mindarThree.addAnchor(0),
+        mindarThree.addAnchor(1),
+        mindarThree.addAnchor(2),
+      ];
 
-startButton.addEventListener("click", (ev) => {
-  ev.preventDefault();
-  startAR();
-});
-</script>
+      const videosByTarget = { 0: [], 1: [], 2: [] };
 
+      for (const targetIndex of [0, 1, 2]) {
+        const anchor = anchors[targetIndex];
+
+        for (const item of PLACEMENTS[targetIndex]) {
+          const video = makeVideo(item.file);
+          videosByTarget[targetIndex].push(video);
+
+          const texture = new THREE.VideoTexture(video);
+          texture.generateMipmaps = false;
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+
+          const material = new THREE.MeshBasicMaterial({
+            map: texture,
+            transparent: true,
+            side: THREE.DoubleSide,
+          });
+
+          const mesh = new THREE.Mesh(plane, material);
+          mesh.position.set(item.x, item.y, 0.01);
+          mesh.scale.set(item.scale, item.scale, 1);
+          anchor.group.add(mesh);
+        }
+
+        anchor.onTargetFound = () => {
+          info.textContent = `Poster ${targetIndex + 1} detected`;
+          for (const v of videosByTarget[targetIndex]) v.play().catch(() => {});
+        };
+
+        anchor.onTargetLost = () => {
+          info.textContent = "Point at a poster";
+          for (const v of videosByTarget[targetIndex]) v.pause();
+        };
+      }
+
+      try {
+        await mindarThree.start();
+      } catch (e) {
+        started = false;
+        startButton.disabled = false;
+        startButton.textContent = "Start camera";
+        info.textContent = "Camera blocked. iPhone Settings > Safari > Camera > Allow.";
+        return;
+      }
+
+      startButton.style.display = "none";
+      info.textContent = "Camera started. Point at a poster.";
+      renderer.setAnimationLoop(() => renderer.render(scene, camera));
+    }
+
+    // Guaranteed tap handlers for iPhone Safari
+    startButton.addEventListener("touchend", (ev) => {
+      ev.preventDefault();
+      alert("Tap received. Starting camera now.");
+      startAR();
+    }, { passive: false });
+
+    startButton.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      alert("Click received. Starting camera now.");
+      startAR();
+    });
+  </script>
 </body>
 </html>

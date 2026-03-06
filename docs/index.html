@@ -3,53 +3,77 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Camera Test</title>
+<title>MindAR Camera</title>
+
 <style>
 html, body { margin:0; width:100%; height:100%; overflow:hidden; background:#000; }
-#btn { position:fixed; left:12px; right:12px; bottom:16px; z-index:999999;
-  font-size:20px; padding:18px 16px; border:0; border-radius:12px; }
-#info { position:fixed; left:0; right:0; bottom:76px; padding:10px 12px;
-  color:#fff; background:rgba(0,0,0,0.65);
+#container { position:fixed; inset:0; }
+#btn {
+  position:fixed; left:12px; right:12px; bottom:16px;
+  z-index:999999; font-size:20px; padding:18px 16px; border:0; border-radius:12px;
+}
+#info {
+  position:fixed; left:0; right:0; bottom:76px;
+  padding:10px 12px; color:#fff; background:rgba(0,0,0,0.65);
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  z-index:999998; white-space:pre-wrap; }
-video { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; background:#000; }
+  z-index:999998; white-space:pre-wrap;
+}
 </style>
-</head>
-<body>
-  <div id="info">Tap Start Camera. If this fails, MindAR will also fail.</div>
-  <button id="btn" type="button">Start Camera</button>
-  <video id="v" playsinline muted></video>
 
-<script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+  }
+}
+</script>
+</head>
+
+<body>
+  <div id="container"></div>
+  <div id="info">Tap Start. Safari should ask for Camera permission.</div>
+  <button id="btn" type="button">Start Camera</button>
+
+<script type="module">
+import { MindARThree } from "mindar-image-three";
+
 const btn = document.getElementById("btn");
 const info = document.getElementById("info");
-const v = document.getElementById("v");
+const container = document.getElementById("container");
 
-async function startCam() {
+let started = false;
+
+async function start() {
+  if (started) return;
+  started = true;
+
   btn.disabled = true;
+  btn.textContent = "Starting...";
   info.textContent = "Requesting camera permission...";
+
+  const mindarThree = new MindARThree({
+    container,
+    imageTargetSrc: "./targets.mind"
+  });
+
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" },
-      audio: false
-    });
-    v.srcObject = stream;
-    await v.play();
-    info.textContent = "Camera is running (no AR yet).";
+    await mindarThree.start();
     btn.style.display = "none";
+    info.textContent = "Camera started. Point at target image.";
   } catch (e) {
+    started = false;
     btn.disabled = false;
+    btn.textContent = "Start Camera";
     info.textContent =
-      "Camera FAILED.\n\n" +
-      "Error name: " + (e && e.name ? e.name : "unknown") + "\n" +
-      "Error message: " + (e && e.message ? e.message : String(e)) + "\n\n" +
-      "Fix: iPhone Settings > Safari > Camera > Allow\n" +
-      "Also: AA icon in address bar > Website Settings > Camera > Allow";
+      "MindAR start FAILED.\n\n" +
+      "Name: " + (e?.name || "unknown") + "\n" +
+      "Message: " + (e?.message || String(e));
   }
 }
 
-btn.addEventListener("touchend", (ev) => { ev.preventDefault(); startCam(); }, { passive:false });
-btn.addEventListener("click", (ev) => { ev.preventDefault(); startCam(); });
+btn.addEventListener("touchend", (ev) => { ev.preventDefault(); start(); }, { passive:false });
+btn.addEventListener("click", (ev) => { ev.preventDefault(); start(); });
 </script>
 </body>
 </html>

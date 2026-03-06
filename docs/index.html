@@ -113,10 +113,12 @@ async function startAR() {
       texture.minFilter = THREE.LinearFilter;
       texture.magFilter = THREE.LinearFilter;
 
-      const mat = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        side: THREE.DoubleSide
+const mat = new THREE.MeshBasicMaterial({
+  map: texture,
+  transparent: true,
+  side: THREE.DoubleSide,
+  alphaTest: 0.05
+});
       });
 
       const mesh = new THREE.Mesh(planeGeo, mat);

@@ -155,7 +155,7 @@ anchor0,
 THREE,
 planeGeo,
 createFramePaths("p1_anim1_frames","p1_anim1",32),
-0,0,0.7,
+-0.3,0.3,0.7,
 12
 );
 
@@ -168,7 +168,7 @@ anchor1,
 THREE,
 planeGeo,
 createFramePaths("p2_anim1_frames","p2_anim1",38),
-0,0,0.7,
+0,-0.3,0.7,
 12
 );
 
@@ -181,7 +181,7 @@ anchor2,
 THREE,
 planeGeo,
 createFramePaths("p3_anim1_frames","p3_anim1",77),
-0,0,0.7,
+-0.3,0.2,0.7,
 12
 );
 
@@ -198,26 +198,29 @@ const animations=[anim1,anim2,anim3];
 
 anchor0.onTargetFound=()=>{
   anim1.playing=true;
-  info.textContent="Anchor 0 detected";
+  info.textContent="Poster 1 detected";
 };
 anchor0.onTargetLost=()=>{
   anim1.playing=false;
+  info.textContent="Scan a poster";
 };
 
 anchor1.onTargetFound=()=>{
   anim2.playing=true;
-  info.textContent="Anchor 1 detected";
+  info.textContent="Poster 2 detected";
 };
 anchor1.onTargetLost=()=>{
   anim2.playing=false;
+  info.textContent="Scan a poster";
 };
 
 anchor2.onTargetFound=()=>{
   anim3.playing=true;
-  info.textContent="Anchor 2 detected";
+  info.textContent="Poster 3 detected";
 };
 anchor2.onTargetLost=()=>{
   anim3.playing=false;
+  info.textContent="Scan a poster";
 };
 
 await mindarThree.start();

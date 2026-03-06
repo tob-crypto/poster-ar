@@ -3,24 +3,36 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MindAR Test</title>
+<title>Poster AR</title>
 
 <style>
 html, body { margin:0; width:100%; height:100%; overflow:hidden; background:#000; }
 #container { position:fixed; inset:0; z-index:0; }
-#btn { position:fixed; left:12px; right:12px; bottom:16px; z-index:2147483647;
-  font-size:20px; padding:18px 16px; border:0; border-radius:12px; touch-action: manipulation; }
-#info { position:fixed; left:0; right:0; bottom:76px; padding:10px 12px; color:#fff;
-  background:rgba(0,0,0,0.65); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  z-index:2147483646; white-space:pre-wrap; }
-#ver { position:fixed; top:10px; right:10px; padding:6px 8px; background:rgba(255,255,0,0.9);
-  color:#000; font-family:sans-serif; font-size:12px; z-index:2147483647; }
+#btn {
+  position:fixed; left:12px; right:12px; bottom:16px;
+  z-index:2147483647; font-size:20px; padding:18px 16px; border:0; border-radius:12px;
+  touch-action: manipulation;
+}
+#info {
+  position:fixed; left:0; right:0; bottom:76px;
+  padding:10px 12px; color:#fff; background:rgba(0,0,0,0.65);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  z-index:2147483646; white-space:pre-wrap;
+}
+#ver {
+  position:fixed; top:10px; right:10px;
+  padding:6px 8px; background:rgba(255,255,0,0.9); color:#000;
+  font-family:sans-serif; font-size:12px; z-index:2147483647;
+  pointer-events:none;
+}
+/* Prevent canvases/videos from stealing taps */
+canvas, video { pointer-events:none !important; }
 </style>
 </head>
 
 <body>
   <div id="container"></div>
-  <div id="ver">DOCS v12 TARGET TEST</div>
+  <div id="ver">DOCS v13 FULL</div>
   <div id="info">Tap Start Camera.</div>
   <button id="btn" type="button">Start Camera</button>
 
@@ -30,17 +42,50 @@ const info = document.getElementById("info");
 const container = document.getElementById("container");
 let started = false;
 
+// Your placements: adjust x/y/scale later for each animation
+const PLACEMENTS = {
+  0: [
+    { x:-0.30, y: 0.25, s:0.55, file:"p1_anim1.webm" },
+    { x: 0.30, y: 0.20, s:0.55, file:"p1_anim2.webm" },
+    { x: 0.00, y:-0.30, s:0.70, file:"p1_anim3.webm" },
+  ],
+  1: [
+    { x:-0.30, y: 0.25, s:0.55, file:"p2_anim1.webm" },
+    { x: 0.30, y: 0.20, s:0.55, file:"p2_anim2.webm" },
+    { x: 0.00, y:-0.30, s:0.70, file:"p2_anim3.webm" },
+  ],
+  2: [
+    { x:-0.30, y: 0.25, s:0.55, file:"p3_anim1.webm" },
+    { x: 0.30, y: 0.20, s:0.55, file:"p3_anim2.webm" },
+    { x: 0.00, y:-0.30, s:0.70, file:"p3_anim3.webm" },
+  ]
+};
+
+function makeVideo(file) {
+  const v = document.createElement("video");
+  v.src = file;
+  v.loop = true;
+  v.muted = true;
+  v.preload = "auto";
+  v.playsInline = true;
+  v.setAttribute("playsinline", "");
+  v.setAttribute("webkit-playsinline", "");
+  v.setAttribute("muted", "");
+  return v;
+}
+
 async function startAR() {
   if (started) return;
   started = true;
 
   btn.disabled = true;
   btn.textContent = "Loading...";
-  info.textContent = "Loading MindAR...";
+  info.textContent = "Loading AR libraries...";
 
   try {
     const mindarMod = await import("https://esm.sh/mind-ar@1.2.5/dist/mindar-image-three.prod.js?deps=three@0.150.0");
     const THREE = await import("https://esm.sh/three@0.150.0");
+
     const MindARThree = mindarMod.MindARThree;
 
     btn.textContent = "Starting...";
@@ -54,22 +99,62 @@ async function startAR() {
     const { renderer, scene, camera } = mindarThree;
     scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
 
-    // BIG obvious green rectangle
-    const geo = new THREE.PlaneGeometry(1.2, 0.7);
-    const mat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-    const box = new THREE.Mesh(geo, mat);
-    box.position.set(0, 0, 0.01);
+    const planeGeo = new THREE.PlaneGeometry(1, 1);
 
-    const anchor0 = mindarThree.addAnchor(0);
-    anchor0.group.add(box);
+    // Track videos per target so we can play/pause
+    const videosByTarget = { 0: [], 1: [], 2: [] };
 
-    anchor0.onTargetFound = () => { info.textContent = "FOUND target index 0 (poster 1)"; };
-    anchor0.onTargetLost  = () => { info.textContent = "LOST target index 0"; };
+    function addVideoPlane(anchor, targetIndex, item) {
+      const video = makeVideo(item.file);
+      videosByTarget[targetIndex].push(video);
+
+      const texture = new THREE.VideoTexture(video);
+      texture.generateMipmaps = false;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+
+      const mat = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        side: THREE.DoubleSide
+      });
+
+      const mesh = new THREE.Mesh(planeGeo, mat);
+      mesh.position.set(item.x, item.y, 0.01);
+      mesh.scale.set(item.s, item.s, 1);
+
+      anchor.group.add(mesh);
+    }
+
+    // Create anchors and add 3 videos each
+    const anchors = [
+      mindarThree.addAnchor(0),
+      mindarThree.addAnchor(1),
+      mindarThree.addAnchor(2)
+    ];
+
+    for (const targetIndex of [0,1,2]) {
+      const anchor = anchors[targetIndex];
+
+      for (const item of PLACEMENTS[targetIndex]) {
+        addVideoPlane(anchor, targetIndex, item);
+      }
+
+      anchor.onTargetFound = () => {
+        info.textContent = `FOUND poster ${targetIndex + 1}`;
+        for (const v of videosByTarget[targetIndex]) v.play().catch(()=>{});
+      };
+
+      anchor.onTargetLost = () => {
+        info.textContent = "Point at a poster";
+        for (const v of videosByTarget[targetIndex]) v.pause();
+      };
+    }
 
     await mindarThree.start();
 
     btn.style.display = "none";
-    info.textContent = "Running. Point at poster 1.";
+    info.textContent = "Running. Point at a poster.";
 
     renderer.setAnimationLoop(() => renderer.render(scene, camera));
 
@@ -77,7 +162,10 @@ async function startAR() {
     started = false;
     btn.disabled = false;
     btn.textContent = "Start Camera";
-    info.textContent = "FAILED\n\n" + (e?.message || String(e));
+    info.textContent =
+      "FAILED\n\n" +
+      "Name: " + (e?.name || "unknown") + "\n" +
+      "Message: " + (e?.message || String(e));
   }
 }
 
